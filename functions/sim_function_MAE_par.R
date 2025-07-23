@@ -1,4 +1,4 @@
-# Wrapper function performing simulation studies for a given set of scenarios (parallelized on replication level)
+# Wrapper function for performing simulation studies for a given set of scenarios (parallelized on replication level)
 
 # Arguments:
 

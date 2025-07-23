@@ -1,4 +1,4 @@
-# Function for running a platform trial with 2 treatment arms and an interim analysis at the time of adding the second arm
+# Function for running a platform trial with 2 treatment arms and an interim analysis of arm 1 at the time of adding the arm 2, where arm 2 is evaluated using the mean adjusted estimator
 # For the data generation, user-defined sample sizes per arm per period and block randomization are assumed
 # The sample sizes has to be chosen such that n_11/n_01 or n_01/n_11, as well as n_12/n_02 or n_02/n_12, and n_22/n_02 or n_02/n_22 are natural numbers in order to enable the block randomization.
 # Linear and stepwise time trends of strength lambda for all arms can be present in the trial

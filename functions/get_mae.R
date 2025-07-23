@@ -1,4 +1,4 @@
-# Function computing the mean adjusted estimator for a given data set. It outputs the MAEs using theta_1 estimated from both periods, only period 1, only period 2, as well as using the true value of theta_1.
+# Function for computing the mean adjusted estimator for a given data set. It outputs the MAEs using theta_1 estimated from both periods, only period 1, only period 2, as well as using the true value of theta_1.
 
 # Arguments:
 

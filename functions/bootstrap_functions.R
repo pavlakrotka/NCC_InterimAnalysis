@@ -1,4 +1,4 @@
-# BOOTSTRAP FUNCTION: Stratified bootstrap with interim analysis
+# Function for performing stratified bootstrap with interim analysis to compute the variance of the mean adjusted estimator
 
 # Arguments:
 

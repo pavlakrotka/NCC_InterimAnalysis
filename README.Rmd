@@ -7,19 +7,20 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-This is an accompanying repository for the paper *"On the inclusion of non-concurrent controls in platform trials with an interim analysis''* by Pavla Krotka, Martin Posch, and Marta Bofill Roig. It contains the code to reproduce all simulations and figures, as well as the case study presented in the paper.
+This is an accompanying repository for the paper *"On the inclusion of non-concurrent controls in platform trials with an interim analysis''* by Pavla Krotka, Martin Posch, and Marta Bofill Roig. It contains the code to reproduce all simulations and figures presented in the manuscript and supplementary material.
 <!-- "[On the inclusion of non-concurrent controls in platform trials with an interim analysis](https://arxiv.org)". -->
 
 The repository is structured as follows:
 
 - Folder **functions**:
 
-This folder contains all functions necessary to run the simulation study:
+    This folder contains all functions necessary to run the simulation study:
 
     - `runtrial_IA_MAE.R` - function for running a platform trial with 2 treatment arms and an interim analysis of arm 1 at the time of adding the arm 2, where arm 2 is evaluated using the mean adjusted estimator
     - `get_mae.R` - function for computing the mean adjusted estimator
     - `bootstrap_functions.R` - function for performing stratified bootstrap with interim analysis to compute the variance of the mean adjusted estimator
     - `sim_function_MAE_par.R` - wrapper function for performing simulation studies for a given set of scenarios
+    
 
 - Folder **paper_sim**:
 

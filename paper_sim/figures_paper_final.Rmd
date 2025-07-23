@@ -1,0 +1,2025 @@
+---
+title: "On the inclusion of non-concurrent controls in platform trials with an interim analysis"
+subtitle: "Figures"
+author: "Pavla Krotka, Martin Posch, Marta Bofill Roig"
+output: 
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float: true
+    number_sections: no
+    code_folding: hide 
+    theme: flatly
+---
+
+```{r setup, include = FALSE}
+library(knitr)
+opts_chunk$set(collapse = TRUE,
+               echo = TRUE,
+               comment = "#>",
+               warning = FALSE,
+               message = FALSE,
+               fig.align = "center",
+               out.width = "100%")
+```
+
+```{r, warning=FALSE, message=FALSE, include=FALSE}
+library(tidyverse)
+library(ggpubr)
+library(kableExtra)
+library(latex2exp)
+library(grid)
+library(rlang)
+```
+
+
+
+```{r}
+# Load in all files from "results"
+
+csv_names <- list.files("results_final/", pattern="*.csv")
+
+for (i in 1:length(csv_names)){
+  assign(str_extract(csv_names[i], "^([^\\.])+"), read_csv(paste0("results_final/", csv_names[i])))
+}
+
+nsim <- 100000
+
+trend_names <- c(linear = "Linear trend", stepwise = "Stepwise trend", notrend = "No time trend")
+```
+
+
+```{r, fig.width=7, fig.height=7}
+get_bias <- function(alpha_1, n01, n11, n02, n12, theta_1){
+  
+  rho <- (1/n02)/(1/n01 + 1/n02 + 1/n11 + 1/n12)
+  
+  c_1 <- qnorm(1-alpha_1)
+  
+  sigma <- 1
+  
+  sd_1 <- sqrt(sigma^2/n11 + sigma^2/n01)
+  
+  # Marginal bias
+  rho*(1-pnorm(c_1 - theta_1))*pnorm(c_1 - theta_1)*sd_1*(dnorm(c_1 - (theta_1/sd_1)) / (pnorm(-c_1 + (theta_1/sd_1)) * pnorm(c_1 - (theta_1/sd_1))))
+}
+
+
+get_bias_cond <- function(alpha_1, n01, n11, n02, n12, theta_1){
+  
+  rho <- (1/n02)/(1/n01 + 1/n02 + 1/n11 + 1/n12)
+  
+  c_1 <- qnorm(1-alpha_1)
+  
+  sigma <- 1
+  
+  sd_1 <- sqrt(sigma^2/n11 + sigma^2/n01)
+  
+  # Bias conditional on arm 1 continuing
+  rho*pnorm(c_1 - theta_1)*sd_1*(dnorm(c_1 - (theta_1/sd_1)) / (pnorm(-c_1 + (theta_1/sd_1)) * pnorm(c_1 - (theta_1/sd_1))))
+  
+}
+```
+
+
+# FIGURES MAIN PAPER
+
+## Bias of the unadjusted model-based estimator (Figure 2)
+
+
+```{r, fig.height=5, fig.width=10}
+# Varying futility bound
+
+n02 <- n12 <- 150
+
+n01 <- n11 <- 150
+
+alpha_1 <- seq(0, 1, by=0.0001)
+
+p1 <- ggplot(data = cbind(alpha_1 = alpha_1, n01=n01, n11=n11, n02=n02, n12=n12)) +
+  geom_line(aes(x=alpha_1, y=get_bias(alpha_1, n01, n11, n02, n12, theta_1 = 0), color = "Marginal"), size = 1.5) +
+  geom_line(aes(x=alpha_1, y=get_bias_cond(alpha_1, n01, n11, n02, n12, theta_1 = 0), color = "Conditional on arm 1 continuing"), size = 1.5) +
+  labs(y = "Bias in the effect estimator for arm 2", color = "Bias:", x = TeX("$\\alpha_1$"), title = "A)") +
+  scale_y_continuous(limits = c(0, 0.1)) +
+  scale_color_manual(values = c("Marginal" = "darkblue", "Conditional on arm 1 continuing" = "darkred")) +
+  theme_bw(base_size = 14) +
+  theme(legend.position = "bottom")
+
+
+#####################################################################################################################################
+
+# Varying r
+
+r <- seq(0, 10, by=0.01) # n01/n02
+
+n02 <- 150
+n12 <- 150
+
+n01 <- r*n02
+
+n11 <- r*n12
+
+alpha_1 <- 0.5
+
+p2 <- ggplot(data = cbind(alpha_1 = alpha_1, n01=n01, n11=n11, n02=n02, n12=n12)) +
+  geom_line(aes(x=r, y=get_bias(alpha_1, n01, n11, n02, n12, theta_1 = 0), color = "Marginal"), size = 1.5) +
+  geom_line(aes(x=r, y=get_bias_cond(alpha_1, n01, n11, n02, n12, theta_1 = 0), color = "Conditional on arm 1 continuing"), size = 1.5) +
+  labs(y = "Bias in the effect estimator for arm 2", color = "Bias:",
+       x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$"), title = "B)") +
+  scale_y_continuous(limits = c(0, 0.1)) +
+  scale_color_manual(values = c("Marginal" = "darkblue", "Conditional on arm 1 continuing" = "darkred")) +
+  theme_bw(base_size = 14) +
+  theme(legend.position = "bottom")
+
+#####################################################################################################################################
+
+# Varying a
+
+a <- seq(0.1, 10, by=0.01) # arm 1:control
+
+n01 <- n02 <- 150
+
+n11 <- n12 <- n01*a
+
+alpha_1 <- 0.5
+
+p3 <- ggplot(data = cbind(alpha_1 = alpha_1, n01=n01, n11=n11, n02=n02, n12=n12)) +
+  geom_line(aes(x=a, y=get_bias(alpha_1, n01, n11, n02, n12, theta_1 = 0), color = "Marginal"), size = 1.5) +
+  geom_line(aes(x=a, y=get_bias_cond(alpha_1, n01, n11, n02, n12, theta_1 = 0), color = "Conditional on arm 1 continuing"), size = 1.5) +
+  labs(y = "Bias in the effect estimator for arm 2", color = "Bias:",
+       x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$"), title = "C)") +
+  scale_y_continuous(limits = c(0, 0.1)) +
+  scale_color_manual(values = c("Marginal" = "darkblue", "Conditional on arm 1 continuing" = "darkred")) +
+  theme_bw(base_size = 14) +
+  theme(legend.position = "bottom")
+
+
+ggarrange(p1, p2, p3,
+          common.legend = T, nrow = 1, legend = "bottom")
+
+ggsave("figures/Fig_maxbias.pdf", height = 5, width = 10)
+```
+
+
+## Marginal bias (Figure 3)
+
+```{r, fig.height=6, fig.width=8}
+plot_bias_alpha1 <- rbind(results_scenarios_t1e_alpha1, results_scenarios_t1e_alpha1_supp) %>%
+  select(futility_bound, trend_pattern, lambda0, bias_arm2_unadj, bias_arm2_adj_theta1_per1, bias_arm2_adj_theta1_per2, bias_arm2_adj_theta1_per12,
+         sd_bias_arm2_unadj, sd_bias_arm2_adj_theta1_per1, sd_bias_arm2_adj_theta1_per2, sd_bias_arm2_adj_theta1_per12) %>%
+  pivot_longer(cols = c(-futility_bound, -trend_pattern, -lambda0), names_to = c(".value", "method"), names_pattern = "(bias|sd_bias)_(.*)") %>%
+  rename(Bias_overall = bias,
+         Theta_2 = method) %>%
+  mutate(trend_pattern = ifelse(lambda0==0, "notrend", trend_pattern),
+         trend_pattern = factor(trend_pattern, levels = c("notrend", "linear", "stepwise")),
+         Theta_2 = factor(Theta_2, levels = c("arm2_unadj", "arm2_adj_theta1_per12", "arm2_adj_theta1_per2", "arm2_adj_theta1_per1")),
+         sd_err_bias = sd_bias/sqrt(nsim))
+
+my_palette = c("arm2_unadj" = "red4",
+               "arm2_adj_theta1_per12" = "royalblue3",
+               "arm2_adj_theta1_per2" = "darkorange2", 
+               "arm2_adj_theta1_per1" = "chartreuse4")
+
+ggplot(plot_bias_alpha1) +
+  geom_point(aes(x = futility_bound, y = Bias_overall, color = Theta_2)) +
+  geom_line(aes(x = futility_bound, y = Bias_overall, color = Theta_2)) +
+  #geom_errorbar(aes(x = futility_bound, y = Bias_overall, ymin = Bias_overall - sd_err_bias, ymax = Bias_overall + sd_err_bias, color = Theta_2), width = 0.04) +
+  xlim(0,1) +
+  facet_grid(~ trend_pattern,
+             labeller = labeller(trend_pattern  = as_labeller(trend_names))) +
+  labs(x = TeX("Futility bound $\\alpha_1$"), y = "Marginal bias for arm 2", color = TeX("Estimator for $\\theta_2$:")) +
+  scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1")), values = my_palette) +
+  # ylim(-0.005, 0.068) + #ylim(-0.0015, 0.0125) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+ggsave("figures/Fig_marg_bias_alpha1.pdf", height=6, width=8)
+```
+
+
+## Conditional bias (Figure 4)
+
+```{r, fig.height=6, fig.width=10}
+
+get_bias_cond <- function(Data, OP, n.sim = nsim){
+  return(Data %>%
+           select(!!OP, arm_1_cont, bias_arm2_unadj_cond, bias_arm2_adj_theta1_per1_cond, bias_arm2_adj_theta1_per2_cond, bias_arm2_adj_theta1_per12_cond,
+                  sd_bias_arm2_unadj_cond, sd_bias_arm2_adj_theta1_per1_cond, sd_bias_arm2_adj_theta1_per2_cond, sd_bias_arm2_adj_theta1_per12_cond) %>%
+           pivot_longer(cols = c(-!!OP, -arm_1_cont), names_to = c(".value", "method"), names_pattern = "(bias|sd_bias)_(.*)") %>%
+           rename(Bias_cond = bias,
+                  Theta_2 = method) %>%
+           mutate(sd_err_bias = sd_bias/sqrt(n.sim*arm_1_cont),
+                  Theta_2 = factor(Theta_2, 
+                                   levels = c("arm2_unadj_cond", "arm2_adj_theta1_per12_cond", "arm2_adj_theta1_per2_cond", "arm2_adj_theta1_per1_cond"))))
+}
+
+my_palette = c("arm2_unadj_cond" = "red4",
+               "arm2_adj_theta1_per12_cond" = "royalblue3",
+               "arm2_adj_theta1_per2_cond" = "darkorange2",
+               "arm2_adj_theta1_per1_cond" = "chartreuse4")
+
+Fig_cond_bias <- ggarrange(ggplot(get_bias_cond(results_scenarios_t1e_alpha1, "futility_bound")) +
+                             geom_point(aes(x = futility_bound, y = Bias_cond, color = Theta_2)) +
+                             geom_line(aes(x = futility_bound, y = Bias_cond, color = Theta_2)) +
+                             #geom_errorbar(aes(x = futility_bound, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), width = 0.04) +
+                             labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                             scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                           TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                           TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                           TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1")), values = my_palette) +
+                             #ylim(-0.014, 0.051) +
+                             scale_y_continuous(n.breaks = 7, limits = c(-0.016, 0.055)) + 
+                             xlim(0,1) +
+                             theme_bw() +
+                             theme(legend.position = "bottom") + 
+                             ggtitle("A)") +
+                             rremove("ylab"),
+                           
+                           ggplot(get_bias_cond(results_scenarios_t1e_r %>% mutate(r = n_01/n_02), "r")) +
+                             geom_point(aes(x = r, y = Bias_cond, color = Theta_2)) +
+                             geom_line(aes(x = r, y = Bias_cond, color = Theta_2)) +
+                             # geom_errorbar(aes(x = r, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), width = 0.4) +
+                             labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                             scale_color_manual(values = my_palette) +
+                             #ylim(-0.014, 0.051) +
+                             scale_y_continuous(n.breaks = 7, limits = c(-0.016, 0.055)) + 
+                             theme_bw() +
+                             theme(legend.position = "bottom") + 
+                             ggtitle("B)") +
+                             rremove("ylab"),
+                           
+                           ggplot(get_bias_cond(results_scenarios_t1e_a %>% mutate(a = n_11/n_01), "a")) +
+                             geom_point(aes(x = a, y = Bias_cond, color = Theta_2)) +
+                             geom_line(aes(x = a, y = Bias_cond, color = Theta_2)) +
+                             # geom_errorbar(aes(x = a, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), width = 0.4) +
+                             labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                             scale_color_manual(values = my_palette) +
+                             #ylim(-0.014, 0.051) +
+                             scale_y_continuous(n.breaks = 7, limits = c(-0.016, 0.055)) + 
+                             theme_bw() +
+                             theme(legend.position = "bottom") + 
+                             ggtitle("C)") +
+                             rremove("ylab"),
+                           
+                           ggplot(get_bias_cond(results_scenarios_t1e_lambda, "lambda0")) +
+                             geom_point(aes(x = lambda0, y = Bias_cond, color = Theta_2)) +
+                             geom_line(aes(x = lambda0, y = Bias_cond, color = Theta_2)) +
+                             #geom_errorbar(aes(x = lambda0, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), 
+                             #   width = 0.04 * ((0.15 - (-0.15))/(1-0))) +
+                             labs(x = TeX("$\\lambda$")) +
+                             scale_color_manual(values = my_palette) +
+                             #ylim(-0.014, 0.051) +
+                             scale_y_continuous(n.breaks = 7, limits = c(-0.016, 0.055)) + 
+                             scale_x_continuous(breaks = unique(results_scenarios_t1e_lambda$lambda0)) +
+                             theme_bw() +
+                             theme(legend.position = "bottom") + 
+                             ggtitle("D)") +
+                             rremove("ylab"),
+                           
+                           common.legend = T, legend = "bottom", nrow = 1)
+
+annotate_figure(Fig_cond_bias, left = textGrob("Conditional bias for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)))
+
+ggsave("figures/Fig_cond_bias.pdf", height = 6, width = 10)
+```
+
+
+
+## Conditional rMSE (Figure 5)
+
+
+```{r, fig.height=6, fig.width=10}
+
+get_MSE_cond <- function(Data, OP){
+  return(Data %>%
+           select(!!OP, MSE_arm2_unadj_cond, MSE_arm2_adj_theta1_per1_cond, MSE_arm2_adj_theta1_per2_cond, MSE_arm2_adj_theta1_per12_cond, MSE_arm2_sep) %>%
+           pivot_longer(cols = c(-!!OP), names_to = "Theta_2", values_to = "MSE_cond") %>%
+           mutate(Theta_2 = factor(Theta_2, 
+                                   levels = c("MSE_arm2_unadj_cond", "MSE_arm2_adj_theta1_per12_cond", "MSE_arm2_adj_theta1_per2_cond", "MSE_arm2_adj_theta1_per1_cond", "MSE_arm2_sep"))))
+}
+
+
+
+my_palette = c("MSE_arm2_unadj_cond" = "red4",
+               "MSE_arm2_adj_theta1_per12_cond" = "royalblue3",
+               "MSE_arm2_adj_theta1_per2_cond" = "darkorange2",
+               "MSE_arm2_adj_theta1_per1_cond" = "chartreuse4",
+               "MSE_arm2_sep" = "black")
+
+
+
+Fig_cond_MSE <- ggarrange(ggplot(get_MSE_cond(results_scenarios_t1e_alpha1, "futility_bound")) +
+                            geom_point(aes(x = futility_bound, y = sqrt(MSE_cond), color = Theta_2)) +
+                            geom_line(aes(x = futility_bound, y = sqrt(MSE_cond), color = Theta_2)) +
+                            labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                            scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                          TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                          TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                          TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1"),
+                                                          "Separate analysis"), values = my_palette) +
+                            ylim(0.094, 0.12) +
+                            xlim(0,1) +
+                            theme_bw() +
+                            theme(legend.position = "bottom") + 
+                            ggtitle("A)") +
+                            rremove("ylab"),
+                          
+                          ggplot(get_MSE_cond(results_scenarios_t1e_r %>% mutate(r = n_01/n_02), "r")) +
+                            geom_point(aes(x = r, y = sqrt(MSE_cond), color = Theta_2)) +
+                            geom_line(aes(x = r, y = sqrt(MSE_cond), color = Theta_2)) +
+                            labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                            scale_color_manual(values = my_palette) +
+                            ylim(0.094, 0.12) +
+                            theme_bw() +
+                            theme(legend.position = "bottom") + 
+                            ggtitle("B)") +
+                            rremove("ylab"),
+                          
+                          ggplot(get_MSE_cond(results_scenarios_t1e_a %>% mutate(a =  n_11/n_01), "a")) +
+                            geom_point(aes(x = a, y = sqrt(MSE_cond), color = Theta_2)) +
+                            geom_line(aes(x = a, y = sqrt(MSE_cond), color = Theta_2)) +
+                            labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                            scale_color_manual(values = my_palette) +
+                            ylim(0.094, 0.12) +
+                            theme_bw() +
+                            theme(legend.position = "bottom") + 
+                            ggtitle("C)") +
+                            rremove("ylab"),
+                          
+                          ggplot(get_MSE_cond(results_scenarios_t1e_lambda, "lambda0")) +
+                            geom_point(aes(x = lambda0, y = sqrt(MSE_cond), color = Theta_2)) +
+                            geom_line(aes(x = lambda0, y = sqrt(MSE_cond), color = Theta_2)) +
+                            labs(x = TeX("$\\lambda$")) +
+                            scale_color_manual(values = my_palette) +
+                            ylim(0.094, 0.12) +
+                            scale_x_continuous(breaks = unique(results_scenarios_t1e_lambda$lambda0)) +
+                            theme_bw() +
+                            theme(legend.position = "bottom") + 
+                            ggtitle("D)") +
+                            rremove("ylab"),
+                          
+                          common.legend = T, legend = "bottom", nrow = 1)
+
+
+
+annotate_figure(Fig_cond_MSE, left = textGrob("Conditional rMSE for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)))
+
+ggsave("figures/Fig_cond_MSE.pdf", height = 6, width = 10)
+```
+
+
+## Conditional T1E (Figure 6)
+
+```{r, fig.height=6, fig.width=10}
+
+get_t1e_cond <- function(Data, OP, n.sim = nsim){
+  
+  p <- 0.025
+  alpha <- 0.05
+  z.alpha <- qnorm(1-alpha/2,0,1)
+  
+  return(Data %>%
+           select(!!OP, arm_1_cont, reject_h02_unadj_cond, reject_h02_adj_theta1_per1_cond, reject_h02_adj_theta1_per2_cond, reject_h02_adj_theta1_per12_cond) %>%
+           pivot_longer(cols = c(-!!OP, -arm_1_cont), names_to = "Theta_2", values_to = "t1e_cond") %>%
+           mutate(pred_int_cond_1 = p-z.alpha*sqrt(p*(1-p)/(n.sim*arm_1_cont)),
+                  pred_int_cond_2 = p+z.alpha*sqrt(p*(1-p)/(n.sim*arm_1_cont)),
+                  Theta_2 = factor(Theta_2, 
+                                   levels = c("reject_h02_unadj_cond", "reject_h02_adj_theta1_per12_cond", "reject_h02_adj_theta1_per2_cond", "reject_h02_adj_theta1_per1_cond"))))
+}
+
+
+
+my_palette = c("reject_h02_unadj_cond" = "red4",
+               "reject_h02_adj_theta1_per12_cond" = "royalblue3",
+               "reject_h02_adj_theta1_per2_cond" = "darkorange2",
+               "reject_h02_adj_theta1_per1_cond" = "chartreuse4")
+
+
+
+Fig_cond_t1e <- ggarrange(ggplot(get_t1e_cond(results_scenarios_t1e_alpha1, "futility_bound")) +
+                            geom_line(aes(x = futility_bound, y = pred_int_cond_1), color = "gray54", alpha = 0.4) +
+                            geom_line(aes(x = futility_bound, y = pred_int_cond_2), color = "gray54", alpha = 0.4) +
+                            geom_ribbon(aes(x = futility_bound, ymin = pred_int_cond_1, ymax = pred_int_cond_2), fill = "gray54", alpha = 0.4) +
+                            geom_hline(yintercept = 0.025, linetype = "dashed") +
+                            geom_point(aes(x = futility_bound, y = t1e_cond, color = Theta_2)) +
+                            geom_line(aes(x = futility_bound, y = t1e_cond, color = Theta_2)) +
+                            labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                            scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                          TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                          TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                          TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1")), values = my_palette) +
+                            scale_y_continuous(limits = c(0, 0.075), n.breaks = 6, breaks = seq(0, 0.075, by = 0.0125), labels = seq(0, 0.075, by = 0.0125)) +
+                            xlim(0,1) +
+                            theme_bw() +
+                            theme(legend.position = "bottom") + 
+                            ggtitle("A)") +
+                            rremove("ylab"),
+                          
+                          ggplot(get_t1e_cond(results_scenarios_t1e_r %>% mutate(r = n_01/n_02), "r")) +
+                            geom_line(aes(x = r, y = pred_int_cond_1), color = "gray54", alpha = 0.4) +
+                            geom_line(aes(x = r, y = pred_int_cond_2), color = "gray54", alpha = 0.4) +
+                            geom_ribbon(aes(x = r, ymin = pred_int_cond_1, ymax = pred_int_cond_2), fill = "gray54", alpha = 0.4) +
+                            geom_hline(yintercept = 0.025, linetype = "dashed") +
+                            geom_point(aes(x = r, y = t1e_cond, color = Theta_2)) +
+                            geom_line(aes(x = r, y = t1e_cond, color = Theta_2)) +
+                            labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                            scale_color_manual(values = my_palette) +
+                            scale_y_continuous(limits = c(0, 0.075), n.breaks = 6, breaks = seq(0, 0.075, by = 0.0125), labels = seq(0, 0.075, by = 0.0125)) +
+                            theme_bw() +
+                            theme(legend.position = "bottom") + 
+                            ggtitle("B)") +
+                            rremove("ylab"),
+                          
+                          ggplot(get_t1e_cond(results_scenarios_t1e_a %>% mutate(a = n_11/n_01), "a")) +
+                            geom_line(aes(x = a, y = pred_int_cond_1), color = "gray54", alpha = 0.4) +
+                            geom_line(aes(x = a, y = pred_int_cond_2), color = "gray54", alpha = 0.4) +
+                            geom_ribbon(aes(x = a, ymin = pred_int_cond_1, ymax = pred_int_cond_2), fill = "gray54", alpha = 0.4) +
+                            geom_hline(yintercept = 0.025, linetype = "dashed") +
+                            geom_point(aes(x = a, y = t1e_cond, color = Theta_2)) +
+                            geom_line(aes(x = a, y = t1e_cond, color = Theta_2)) +
+                            labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                            scale_color_manual(values = my_palette) +
+                            scale_y_continuous(limits = c(0, 0.075), n.breaks = 6, breaks = seq(0, 0.075, by = 0.0125), labels = seq(0, 0.075, by = 0.0125)) +
+                            theme_bw() +
+                            theme(legend.position = "bottom") + 
+                            ggtitle("C)") +
+                            rremove("ylab"),
+                          
+                          ggplot(get_t1e_cond(results_scenarios_t1e_lambda, "lambda0")) +
+                            geom_line(aes(x = lambda0, y = pred_int_cond_1), color = "gray54", alpha = 0.4) +
+                            geom_line(aes(x = lambda0, y = pred_int_cond_2), color = "gray54", alpha = 0.4) +
+                            geom_ribbon(aes(x = lambda0, ymin = pred_int_cond_1, ymax = pred_int_cond_2), fill = "gray54", alpha = 0.4) +
+                            geom_hline(yintercept = 0.025, linetype = "dashed") +
+                            geom_point(aes(x = lambda0, y = t1e_cond, color = Theta_2)) +
+                            geom_line(aes(x = lambda0, y = t1e_cond, color = Theta_2)) +
+                            labs(x = TeX("$\\lambda$")) +
+                            scale_color_manual(values = my_palette) +
+                            scale_y_continuous(limits = c(0, 0.075), n.breaks = 6, breaks = seq(0, 0.075, by = 0.0125), labels = seq(0, 0.075, by = 0.0125)) +
+                            scale_x_continuous(breaks = unique(results_scenarios_t1e_lambda$lambda0)) +
+                            theme_bw() +
+                            theme(legend.position = "bottom") + 
+                            ggtitle("D)") +
+                            rremove("ylab"),
+                          
+                          common.legend = T, legend = "bottom", nrow = 1)
+
+
+
+annotate_figure(Fig_cond_t1e, left = textGrob("Conditional type I error rate for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)))
+
+ggsave("figures/Fig_cond_t1e.pdf", height = 6, width = 10)
+```
+
+
+## Conditional power (Figure 7)
+
+
+```{r, fig.height=6, fig.width=10}
+
+get_power_cond <- function(Data, OP){
+  
+  return(Data %>%
+           select(!!OP, reject_h02_unadj_cond, reject_h02_adj_theta1_per1_cond, reject_h02_adj_theta1_per2_cond, reject_h02_adj_theta1_per12_cond, reject_h02_sep) %>%
+           pivot_longer(cols = c(-!!OP), names_to = "Theta_2", values_to = "pow_cond") %>%
+           mutate(Theta_2 = factor(Theta_2, 
+                                   levels = c("reject_h02_unadj_cond", "reject_h02_adj_theta1_per12_cond", "reject_h02_adj_theta1_per2_cond", "reject_h02_adj_theta1_per1_cond", "reject_h02_sep"))))
+}
+
+
+my_palette = c("reject_h02_unadj_cond" = "red4",
+               "reject_h02_adj_theta1_per12_cond" = "royalblue3",
+               "reject_h02_adj_theta1_per2_cond" = "darkorange2",
+               "reject_h02_adj_theta1_per1_cond" = "chartreuse4",
+               "reject_h02_sep" = "black")
+
+
+
+Fig_cond_pow <- ggarrange(ggplot(get_power_cond(results_scenarios_pow_alpha1, "futility_bound")) +
+                            geom_point(aes(x = futility_bound, y = pow_cond, color = Theta_2)) +
+                            geom_line(aes(x = futility_bound, y = pow_cond, color = Theta_2)) +
+                            labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                            scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                          TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                          TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                          TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1"),
+                                                          "Separate analysis"), values = my_palette) +
+                            ylim(0.783, 0.953) +
+                            xlim(0, 1) +
+                            theme_bw() +
+                            theme(legend.position = "bottom") + 
+                            ggtitle("A)") +
+                            rremove("ylab"),
+                          
+                          ggplot(get_power_cond(results_scenarios_pow_r %>% mutate(r = n_01/n_02), "r")) +
+                            geom_point(aes(x = r, y = pow_cond, color = Theta_2)) +
+                            geom_line(aes(x = r, y = pow_cond, color = Theta_2)) +
+                            labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                            scale_color_manual(values = my_palette) +
+                            ylim(0.783, 0.953) +
+                            theme_bw() +
+                            theme(legend.position = "bottom") +
+                            ggtitle("B)") +
+                            rremove("ylab"),
+                          
+                          ggplot(get_power_cond(results_scenarios_pow_a %>% mutate(a = n_11/n_01), "a")) +
+                            geom_point(aes(x = a, y = pow_cond, color = Theta_2)) +
+                            geom_line(aes(x = a, y = pow_cond, color = Theta_2)) +
+                            labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                            scale_color_manual(values = my_palette) +
+                            ylim(0.783, 0.953) +
+                            theme_bw() +
+                            theme(legend.position = "bottom") + 
+                            ggtitle("C)") +
+                            rremove("ylab"),
+                          
+                          ggplot(get_power_cond(results_scenarios_pow_lambda, "lambda0")) +
+                            geom_point(aes(x = lambda0, y = pow_cond, color = Theta_2)) +
+                            geom_line(aes(x = lambda0, y = pow_cond, color = Theta_2)) +
+                            labs(x = TeX("$\\lambda$")) +
+                            scale_color_manual(values = my_palette) +
+                            ylim(0.783, 0.953) +
+                            scale_x_continuous(breaks = unique(results_scenarios_pow_lambda$lambda0)) +
+                            theme_bw() +
+                            theme(legend.position = "bottom") + 
+                            ggtitle("D)") +
+                            rremove("ylab"),
+                          
+                          common.legend = T, legend = "bottom", nrow = 1)
+
+
+
+annotate_figure(Fig_cond_pow, left = textGrob("Conditional power for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)))
+
+ggsave("figures/Fig_cond_pow.pdf", height = 6, width = 10)
+```
+
+
+
+# FIGURES SUPPLEMENTARY MATERIAL
+
+## Marginal bias
+
+```{r, fig.height=12, fig.width=10}
+get_bias_marg <- function(Data, OP){
+  return(Data %>%
+           select(!!OP, arm_1_cont, bias_arm2_unadj, bias_arm2_adj_theta1_per1, bias_arm2_adj_theta1_per2, bias_arm2_adj_theta1_per12,
+                  sd_bias_arm2_unadj, sd_bias_arm2_adj_theta1_per1, sd_bias_arm2_adj_theta1_per2, sd_bias_arm2_adj_theta1_per12) %>%
+           pivot_longer(cols = c(-!!OP, -arm_1_cont), names_to = c(".value", "method"), names_pattern = "(bias|sd_bias)_(.*)") %>%
+           rename(Bias_cond = bias,
+                  Theta_2 = method) %>%
+           mutate(sd_err_bias = sd_bias/sqrt(nsim),
+                  Theta_2 = factor(Theta_2, 
+                                   levels = c("arm2_unadj", "arm2_adj_theta1_per12", "arm2_adj_theta1_per2", "arm2_adj_theta1_per1"))))
+}
+
+my_palette = c("arm2_unadj" = "red4",
+               "arm2_adj_theta1_per12" = "royalblue3",
+               "arm2_adj_theta1_per2" = "darkorange2", 
+               "arm2_adj_theta1_per1" = "chartreuse4")
+
+Fig_marg_bias_notrend <- ggarrange(ggplot(get_bias_marg(results_scenarios_t1e_alpha1, "futility_bound")) +
+                                     geom_point(aes(x = futility_bound, y = Bias_cond, color = Theta_2)) +
+                                     geom_line(aes(x = futility_bound, y = Bias_cond, color = Theta_2)) +
+                                     #geom_errorbar(aes(x = futility_bound, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), width = 0.04) +
+                                     labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                                     scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                                   TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                                   TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                                   TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1")), 
+                                                        values = my_palette) +
+                                     #ylim(-0.014, 0.051) +
+                                     scale_y_continuous(limits = c(-0.01, 0.02)) + 
+                                     xlim(0,1) +
+                                     theme_bw() +
+                                     theme(legend.position = "bottom") + 
+                                     ggtitle("A)") +
+                                     rremove("ylab"),
+                                   
+                                   ggplot(get_bias_marg(results_scenarios_t1e_r %>% mutate(r = n_01/n_02), "r")) +
+                                     geom_point(aes(x = r, y = Bias_cond, color = Theta_2)) +
+                                     geom_line(aes(x = r, y = Bias_cond, color = Theta_2)) +
+                                     # geom_errorbar(aes(x = r, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), width = 0.4) +
+                                     labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                     scale_color_manual(values = my_palette) +
+                                     #ylim(-0.014, 0.051) +
+                                     scale_y_continuous(limits = c(-0.01, 0.02)) + 
+                                     theme_bw() +
+                                     theme(legend.position = "bottom") + 
+                                     ggtitle("B)") +
+                                     rremove("ylab"),
+                                   
+                                   ggplot(get_bias_marg(results_scenarios_t1e_a %>% mutate(a = n_11/n_01), "a")) +
+                                     geom_point(aes(x = a, y = Bias_cond, color = Theta_2)) +
+                                     geom_line(aes(x = a, y = Bias_cond, color = Theta_2)) +
+                                     # geom_errorbar(aes(x = a, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), width = 0.4) +
+                                     labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                     scale_color_manual(values = my_palette) +
+                                     #ylim(-0.014, 0.051) +
+                                     scale_y_continuous(limits = c(-0.01, 0.02)) + 
+                                     theme_bw() +
+                                     theme(legend.position = "bottom") + 
+                                     ggtitle("C)") +
+                                     rremove("ylab"),
+                                   
+                                   NA,
+                                   
+                                   common.legend = T, legend = "bottom", nrow = 1)
+
+
+Fig_marg_bias_notrend <- annotate_figure(Fig_marg_bias_notrend, 
+                                         left = textGrob("Marginal bias for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                         top = textGrob("No time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+
+Fig_marg_bias_linear <- ggarrange(ggplot(get_bias_marg(results_scenarios_t1e_alpha1_supp %>% filter(trend_pattern=="linear"), "futility_bound")) +
+                                    geom_point(aes(x = futility_bound, y = Bias_cond, color = Theta_2)) +
+                                    geom_line(aes(x = futility_bound, y = Bias_cond, color = Theta_2)) +
+                                    #geom_errorbar(aes(x = futility_bound, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), width = 0.04) +
+                                    labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                                    scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                                  TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                                  TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                                  TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1")), 
+                                                       values = my_palette) +
+                                    #ylim(-0.014, 0.051) +
+                                    scale_y_continuous(limits = c(-0.01, 0.02)) + 
+                                    xlim(0,1) +
+                                    theme_bw() +
+                                    theme(legend.position = "bottom") + 
+                                    ggtitle("A)") +
+                                    rremove("ylab"),
+                                  
+                                  ggplot(get_bias_marg(results_scenarios_t1e_r_supp %>% filter(trend_pattern=="linear") %>% mutate(r = n_01/n_02), "r")) +
+                                    geom_point(aes(x = r, y = Bias_cond, color = Theta_2)) +
+                                    geom_line(aes(x = r, y = Bias_cond, color = Theta_2)) +
+                                    # geom_errorbar(aes(x = r, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), width = 0.4) +
+                                    labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                    scale_color_manual(values = my_palette) +
+                                    #ylim(-0.014, 0.051) +
+                                    scale_y_continuous(limits = c(-0.01, 0.02)) + 
+                                    theme_bw() +
+                                    theme(legend.position = "bottom") + 
+                                    ggtitle("B)") +
+                                    rremove("ylab"),
+                                  
+                                  ggplot(get_bias_marg(results_scenarios_t1e_a_supp %>% filter(trend_pattern=="linear") %>% mutate(a = n_11/n_01), "a")) +
+                                    geom_point(aes(x = a, y = Bias_cond, color = Theta_2)) +
+                                    geom_line(aes(x = a, y = Bias_cond, color = Theta_2)) +
+                                    # geom_errorbar(aes(x = a, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), width = 0.4) +
+                                    labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                    scale_color_manual(values = my_palette) +
+                                    #ylim(-0.014, 0.051) +
+                                    scale_y_continuous(limits = c(-0.01, 0.02)) + 
+                                    theme_bw() +
+                                    theme(legend.position = "bottom") + 
+                                    ggtitle("C)") +
+                                    rremove("ylab"),
+                                  
+                                  ggplot(get_bias_marg(results_scenarios_t1e_lambda_supp %>% filter(trend_pattern=="linear"), "lambda0")) +
+                                    geom_point(aes(x = lambda0, y = Bias_cond, color = Theta_2)) +
+                                    geom_line(aes(x = lambda0, y = Bias_cond, color = Theta_2)) +
+                                    #geom_errorbar(aes(x = lambda0, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), 
+                                    #   width = 0.04 * ((0.15 - (-0.15))/(1-0))) +
+                                    labs(x = TeX("$\\lambda$")) +
+                                    scale_color_manual(values = my_palette) +
+                                    #ylim(-0.014, 0.051) +
+                                    scale_y_continuous(limits = c(-0.01, 0.02)) + 
+                                    scale_x_continuous(breaks = unique(results_scenarios_t1e_lambda$lambda0)) +
+                                    theme_bw() +
+                                    theme(legend.position = "bottom") + 
+                                    ggtitle("D)") +
+                                    rremove("ylab"),
+                                  
+                                  common.legend = T, legend = "bottom", nrow = 1)
+
+
+Fig_marg_bias_linear <- annotate_figure(Fig_marg_bias_linear, 
+                                        left = textGrob("Marginal bias for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                        top = textGrob("Linear time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+Fig_marg_bias_step <- ggarrange(ggplot(get_bias_marg(results_scenarios_t1e_alpha1_supp %>% filter(trend_pattern=="stepwise"), "futility_bound")) +
+                                  geom_point(aes(x = futility_bound, y = Bias_cond, color = Theta_2)) +
+                                  geom_line(aes(x = futility_bound, y = Bias_cond, color = Theta_2)) +
+                                  #geom_errorbar(aes(x = futility_bound, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), width = 0.04) +
+                                  labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                                  scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                                TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                                TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                                TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1")), 
+                                                     values = my_palette) +
+                                  #ylim(-0.014, 0.051) +
+                                  scale_y_continuous(limits = c(-0.01, 0.02)) + 
+                                  xlim(0,1) +
+                                  theme_bw() +
+                                  theme(legend.position = "bottom") + 
+                                  ggtitle("A)") +
+                                  rremove("ylab"),
+                                
+                                ggplot(get_bias_marg(results_scenarios_t1e_r_supp %>% filter(trend_pattern=="stepwise") %>% mutate(r = n_01/n_02), "r")) +
+                                  geom_point(aes(x = r, y = Bias_cond, color = Theta_2)) +
+                                  geom_line(aes(x = r, y = Bias_cond, color = Theta_2)) +
+                                  # geom_errorbar(aes(x = r, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), width = 0.4) +
+                                  labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                  scale_color_manual(values = my_palette) +
+                                  #ylim(-0.014, 0.051) +
+                                  scale_y_continuous(limits = c(-0.01, 0.02)) + 
+                                  theme_bw() +
+                                  theme(legend.position = "bottom") + 
+                                  ggtitle("B)") +
+                                  rremove("ylab"),
+                                
+                                ggplot(get_bias_marg(results_scenarios_t1e_a_supp %>% filter(trend_pattern=="stepwise") %>% mutate(a = n_11/n_01), "a")) +
+                                  geom_point(aes(x = a, y = Bias_cond, color = Theta_2)) +
+                                  geom_line(aes(x = a, y = Bias_cond, color = Theta_2)) +
+                                  # geom_errorbar(aes(x = a, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), width = 0.4) +
+                                  labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                  scale_color_manual(values = my_palette) +
+                                  #ylim(-0.014, 0.051) +
+                                  scale_y_continuous(limits = c(-0.01, 0.02)) + 
+                                  theme_bw() +
+                                  theme(legend.position = "bottom") + 
+                                  ggtitle("C)") +
+                                  rremove("ylab"),
+                                
+                                ggplot(get_bias_marg(results_scenarios_t1e_lambda_supp %>% filter(trend_pattern=="stepwise"), "lambda0")) +
+                                  geom_point(aes(x = lambda0, y = Bias_cond, color = Theta_2)) +
+                                  geom_line(aes(x = lambda0, y = Bias_cond, color = Theta_2)) +
+                                  #geom_errorbar(aes(x = lambda0, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), 
+                                  #   width = 0.04 * ((0.15 - (-0.15))/(1-0))) +
+                                  labs(x = TeX("$\\lambda$")) +
+                                  scale_color_manual(values = my_palette) +
+                                  #ylim(-0.014, 0.051) +
+                                  scale_y_continuous(limits = c(-0.01, 0.02)) + 
+                                  scale_x_continuous(breaks = unique(results_scenarios_t1e_lambda$lambda0)) +
+                                  theme_bw() +
+                                  theme(legend.position = "bottom") + 
+                                  ggtitle("D)") +
+                                  rremove("ylab"),
+                                
+                                common.legend = T, legend = "bottom", nrow = 1)
+
+
+Fig_marg_bias_step <- annotate_figure(Fig_marg_bias_step, 
+                                      left = textGrob("Marginal bias for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                      top = textGrob("Stepwise time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+#annotate_figure(Fig_marg_bias_step, left = textGrob("Marginal bias for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)))
+
+ggarrange(Fig_marg_bias_notrend, Fig_marg_bias_linear, Fig_marg_bias_step, ncol = 1)
+
+ggsave("figures/Fig_marg_bias_supp.pdf", height = 12, width = 10)
+
+```
+
+
+
+## Marginal rMSE
+
+```{r, fig.height=12, fig.width=10}
+get_MSE_marg <- function(Data, OP){
+  return(Data %>%
+           select(!!OP, MSE_arm2_unadj, MSE_arm2_adj_theta1_per1, MSE_arm2_adj_theta1_per2, MSE_arm2_adj_theta1_per12, MSE_arm2_sep) %>%
+           pivot_longer(cols = c(-!!OP), names_to = "Theta_2", values_to = "MSE") %>%
+           mutate(Theta_2 = factor(Theta_2, 
+                                   levels = c("MSE_arm2_unadj", "MSE_arm2_adj_theta1_per12", "MSE_arm2_adj_theta1_per2", "MSE_arm2_adj_theta1_per1", "MSE_arm2_sep"))))
+}
+
+my_palette = c("MSE_arm2_unadj" = "red4",
+               "MSE_arm2_adj_theta1_per12" = "royalblue3",
+               "MSE_arm2_adj_theta1_per2" = "darkorange2",
+               "MSE_arm2_adj_theta1_per1" = "chartreuse4",
+               "MSE_arm2_sep" = "black")
+
+
+
+Fig_marg_MSE_notrend <- ggarrange(ggplot(get_MSE_marg(results_scenarios_t1e_alpha1, "futility_bound")) +
+                                    geom_point(aes(x = futility_bound, y = sqrt(MSE), color = Theta_2)) +
+                                    geom_line(aes(x = futility_bound, y = sqrt(MSE), color = Theta_2)) +
+                                    labs(x = TeX("Futility bound $\\alpha_1$"), y = "Conditional rMSE for arm 2", color = TeX("Estimator for $\\theta_2$:")) +
+                                    scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                                  TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                                  TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                                  TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1"),
+                                                                  "Separate analysis"), values = my_palette) +
+                                    ylim(0.105, 0.12) +
+                                    xlim(0,1) +
+                                    theme_bw() +
+                                    theme(legend.position = "bottom") + 
+                                    ggtitle("A)") +
+                                    rremove("ylab"),
+                                  
+                                  ggplot(get_MSE_marg(results_scenarios_t1e_r %>% mutate(r = n_01/n_02), "r")) +
+                                    geom_point(aes(x = r, y = sqrt(MSE), color = Theta_2)) +
+                                    geom_line(aes(x = r, y = sqrt(MSE), color = Theta_2)) +
+                                    labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                    scale_color_manual(values = my_palette) +
+                                    ylim(0.105, 0.12) +
+                                    theme_bw() +
+                                    theme(legend.position = "bottom") + 
+                                    ggtitle("B)") +
+                                    rremove("ylab"),
+                                  
+                                  ggplot(get_MSE_marg(results_scenarios_t1e_a %>% mutate(a =  n_11/n_01), "a")) +
+                                    geom_point(aes(x = a, y = sqrt(MSE), color = Theta_2)) +
+                                    geom_line(aes(x = a, y = sqrt(MSE), color = Theta_2)) +
+                                    labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                    scale_color_manual(values = my_palette) +
+                                    ylim(0.105, 0.12) +
+                                    theme_bw() +
+                                    theme(legend.position = "bottom") + 
+                                    ggtitle("C)") +
+                                    rremove("ylab"),
+                                  
+                                  NA,
+                                  
+                                  common.legend = T, legend = "bottom", nrow = 1)
+
+
+
+Fig_marg_MSE_notrend <- annotate_figure(Fig_marg_MSE_notrend, 
+                                        left = textGrob("Marginal rMSE for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                        top = textGrob("No time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+Fig_marg_MSE_linear <- ggarrange(ggplot(get_MSE_marg(results_scenarios_t1e_alpha1_supp %>% filter(trend_pattern=="linear"), "futility_bound")) +
+                                   geom_point(aes(x = futility_bound, y = sqrt(MSE), color = Theta_2)) +
+                                   geom_line(aes(x = futility_bound, y = sqrt(MSE), color = Theta_2)) +
+                                   labs(x = TeX("Futility bound $\\alpha_1$"), y = "Conditional rMSE for arm 2", color = TeX("Estimator for $\\theta_2$:")) +
+                                   scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                                 TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                                 TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                                 TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1"),
+                                                                 "Separate analysis"), values = my_palette) +
+                                   ylim(0.105, 0.12) +
+                                   xlim(0,1) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("A)") +
+                                   rremove("ylab"),
+                                 
+                                 ggplot(get_MSE_marg(results_scenarios_t1e_r_supp %>% filter(trend_pattern=="linear") %>% mutate(r = n_01/n_02), "r")) +
+                                   geom_point(aes(x = r, y = sqrt(MSE), color = Theta_2)) +
+                                   geom_line(aes(x = r, y = sqrt(MSE), color = Theta_2)) +
+                                   labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                   scale_color_manual(values = my_palette) +
+                                   ylim(0.105, 0.12) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("B)") +
+                                   rremove("ylab"),
+                                 
+                                 ggplot(get_MSE_marg(results_scenarios_t1e_a_supp %>% filter(trend_pattern=="linear") %>% mutate(a =  n_11/n_01), "a")) +
+                                   geom_point(aes(x = a, y = sqrt(MSE), color = Theta_2)) +
+                                   geom_line(aes(x = a, y = sqrt(MSE), color = Theta_2)) +
+                                   labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                   scale_color_manual(values = my_palette) +
+                                   ylim(0.105, 0.12) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("C)") +
+                                   rremove("ylab"),
+                                 
+                                 ggplot(get_MSE_marg(results_scenarios_t1e_lambda_supp %>% filter(trend_pattern=="linear"), "lambda0")) +
+                                   geom_point(aes(x = lambda0, y = sqrt(MSE), color = Theta_2)) +
+                                   geom_line(aes(x = lambda0, y = sqrt(MSE), color = Theta_2)) +
+                                   labs(x = TeX("$\\lambda$")) +
+                                   scale_color_manual( values = my_palette) +
+                                   ylim(0.105, 0.12) +
+                                   scale_x_continuous(breaks = unique(results_scenarios_t1e_lambda$lambda0)) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("D)") +
+                                   rremove("ylab"),
+                                 
+                                 common.legend = T, legend = "bottom", nrow = 1)
+
+
+
+Fig_marg_MSE_linear <- annotate_figure(Fig_marg_MSE_linear, 
+                                       left = textGrob("Marginal rMSE for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                       top = textGrob("Linear time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+
+Fig_marg_MSE_step <- ggarrange(ggplot(get_MSE_marg(results_scenarios_t1e_alpha1_supp %>% filter(trend_pattern=="stepwise"), "futility_bound")) +
+                                 geom_point(aes(x = futility_bound, y = sqrt(MSE), color = Theta_2)) +
+                                 geom_line(aes(x = futility_bound, y = sqrt(MSE), color = Theta_2)) +
+                                 labs(x = TeX("Futility bound $\\alpha_1$"), y = "Conditional rMSE for arm 2", color = TeX("Estimator for $\\theta_2$:")) +
+                                 scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                               TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                               TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                               TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1"),
+                                                               "Separate analysis"), values = my_palette) +
+                                 ylim(0.105, 0.12) +
+                                 xlim(0,1) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("A)") +
+                                 rremove("ylab"),
+                               
+                               ggplot(get_MSE_marg(results_scenarios_t1e_r_supp %>% filter(trend_pattern=="stepwise") %>% mutate(r = n_01/n_02), "r")) +
+                                 geom_point(aes(x = r, y = sqrt(MSE), color = Theta_2)) +
+                                 geom_line(aes(x = r, y = sqrt(MSE), color = Theta_2)) +
+                                 labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                 scale_color_manual(values = my_palette) +
+                                 ylim(0.105, 0.12) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("B)") +
+                                 rremove("ylab"),
+                               
+                               ggplot(get_MSE_marg(results_scenarios_t1e_a_supp %>% filter(trend_pattern=="stepwise") %>% mutate(a =  n_11/n_01), "a")) +
+                                 geom_point(aes(x = a, y = sqrt(MSE), color = Theta_2)) +
+                                 geom_line(aes(x = a, y = sqrt(MSE), color = Theta_2)) +
+                                 labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                 scale_color_manual(values = my_palette) +
+                                 ylim(0.105, 0.12) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("C)") +
+                                 rremove("ylab"),
+                               
+                               ggplot(get_MSE_marg(results_scenarios_t1e_lambda_supp %>% filter(trend_pattern=="stepwise"), "lambda0")) +
+                                 geom_point(aes(x = lambda0, y = sqrt(MSE), color = Theta_2)) +
+                                 geom_line(aes(x = lambda0, y = sqrt(MSE), color = Theta_2)) +
+                                 labs(x = TeX("$\\lambda$")) +
+                                 scale_color_manual( values = my_palette) +
+                                 ylim(0.105, 0.12) +
+                                 scale_x_continuous(breaks = unique(results_scenarios_t1e_lambda$lambda0)) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("D)") +
+                                 rremove("ylab"),
+                               
+                               common.legend = T, legend = "bottom", nrow = 1)
+
+
+
+Fig_marg_MSE_step <- annotate_figure(Fig_marg_MSE_step, 
+                                     left = textGrob("Marginal rMSE for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                     top = textGrob("Stepwise time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+
+ggarrange(Fig_marg_MSE_notrend, Fig_marg_MSE_linear, Fig_marg_MSE_step, ncol = 1)
+
+ggsave("figures/Fig_marg_MSE_supp.pdf", height = 12, width = 10)
+```
+
+
+
+
+## Marginal T1E
+
+
+```{r, fig.height=12, fig.width=10}
+get_t1e_marg <- function(Data, OP, n.sim = nsim){
+  
+  p <- 0.025
+  alpha <- 0.05
+  z.alpha <- qnorm(1-alpha/2,0,1)
+  
+  return(Data %>%
+           select(!!OP, arm_1_cont, reject_h02_unadj, reject_h02_adj_theta1_per1, reject_h02_adj_theta1_per2, reject_h02_adj_theta1_per12) %>%
+           pivot_longer(cols = c(-!!OP, -arm_1_cont), names_to = "Theta_2", values_to = "t1e") %>%
+           mutate(pred_int_1 = p-z.alpha*sqrt(p*(1-p)/(n.sim)),
+                  pred_int_2 = p+z.alpha*sqrt(p*(1-p)/(n.sim)),
+                  Theta_2 = factor(Theta_2, 
+                                   levels = c("reject_h02_unadj", "reject_h02_adj_theta1_per12", "reject_h02_adj_theta1_per2", "reject_h02_adj_theta1_per1"))))
+}
+
+
+my_palette = c("reject_h02_unadj" = "red4",
+               "reject_h02_adj_theta1_per12" = "royalblue3",
+               "reject_h02_adj_theta1_per2" = "darkorange2",
+               "reject_h02_adj_theta1_per1" = "chartreuse4")
+
+
+
+Fig_marg_t1e_notrend <- ggarrange(ggplot(get_t1e_marg(results_scenarios_t1e_alpha1, "futility_bound")) +
+                                    geom_line(aes(x = futility_bound, y = pred_int_1), color = "gray54", alpha = 0.4) +
+                                    geom_line(aes(x = futility_bound, y = pred_int_2), color = "gray54", alpha = 0.4) +
+                                    geom_ribbon(aes(x = futility_bound, ymin = pred_int_1, ymax = pred_int_2), fill = "gray54", alpha = 0.4) +
+                                    geom_hline(yintercept = 0.025, linetype = "dashed") +
+                                    geom_point(aes(x = futility_bound, y = t1e, color = Theta_2)) +
+                                    geom_line(aes(x = futility_bound, y = t1e, color = Theta_2)) +
+                                    labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                                    scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                                  TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                                  TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                                  TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1")), 
+                                                       values = my_palette) +
+                                    scale_y_continuous(limits = c(0, 0.04)) +
+                                    xlim(0,1) +
+                                    theme_bw() +
+                                    theme(legend.position = "bottom") + 
+                                    ggtitle("A)") +
+                                    rremove("ylab"),
+                                  
+                                  ggplot(get_t1e_marg(results_scenarios_t1e_r %>% mutate(r = n_01/n_02), "r")) +
+                                    geom_line(aes(x = r, y = pred_int_1), color = "gray54", alpha = 0.4) +
+                                    geom_line(aes(x = r, y = pred_int_2), color = "gray54", alpha = 0.4) +
+                                    geom_ribbon(aes(x = r, ymin = pred_int_1, ymax = pred_int_2), fill = "gray54", alpha = 0.4) +
+                                    geom_hline(yintercept = 0.025, linetype = "dashed") +
+                                    geom_point(aes(x = r, y = t1e, color = Theta_2)) +
+                                    geom_line(aes(x = r, y = t1e, color = Theta_2)) +
+                                    labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                    scale_color_manual(values = my_palette) +
+                                    scale_y_continuous(limits = c(0, 0.04)) +
+                                    theme_bw() +
+                                    theme(legend.position = "bottom") + 
+                                    ggtitle("B)") +
+                                    rremove("ylab"),
+                                  
+                                  ggplot(get_t1e_marg(results_scenarios_t1e_a %>% mutate(a = n_11/n_01), "a")) +
+                                    geom_line(aes(x = a, y = pred_int_1), color = "gray54", alpha = 0.4) +
+                                    geom_line(aes(x = a, y = pred_int_2), color = "gray54", alpha = 0.4) +
+                                    geom_ribbon(aes(x = a, ymin = pred_int_1, ymax = pred_int_2), fill = "gray54", alpha = 0.4) +
+                                    geom_hline(yintercept = 0.025, linetype = "dashed") +
+                                    geom_point(aes(x = a, y = t1e, color = Theta_2)) +
+                                    geom_line(aes(x = a, y = t1e, color = Theta_2)) +
+                                    labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                    scale_color_manual(values = my_palette) +
+                                    scale_y_continuous(limits = c(0, 0.04)) +
+                                    theme_bw() +
+                                    theme(legend.position = "bottom") + 
+                                    ggtitle("C)") +
+                                    rremove("ylab"),
+                                  
+                                  NA,
+                                  
+                                  common.legend = T, legend = "bottom", nrow = 1)
+
+
+Fig_marg_t1e_notrend <- annotate_figure(Fig_marg_t1e_notrend, 
+                                        left = textGrob("Marginal type I error rate for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                        top = textGrob("No time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+
+
+Fig_marg_t1e_linear <- ggarrange(ggplot(get_t1e_marg(results_scenarios_t1e_alpha1_supp %>% filter(trend_pattern=="linear"), "futility_bound")) +
+                                   geom_line(aes(x = futility_bound, y = pred_int_1), color = "gray54", alpha = 0.4) +
+                                   geom_line(aes(x = futility_bound, y = pred_int_2), color = "gray54", alpha = 0.4) +
+                                   geom_ribbon(aes(x = futility_bound, ymin = pred_int_1, ymax = pred_int_2), fill = "gray54", alpha = 0.4) +
+                                   geom_hline(yintercept = 0.025, linetype = "dashed") +
+                                   geom_point(aes(x = futility_bound, y = t1e, color = Theta_2)) +
+                                   geom_line(aes(x = futility_bound, y = t1e, color = Theta_2)) +
+                                   labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                                   scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                                 TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                                 TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                                 TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1")), 
+                                                      values = my_palette) +
+                                   scale_y_continuous(limits = c(0, 0.04)) +
+                                   xlim(0,1) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("A)") +
+                                   rremove("ylab"),
+                                 
+                                 ggplot(get_t1e_marg(results_scenarios_t1e_r_supp %>% filter(trend_pattern=="linear") %>% mutate(r = n_01/n_02), "r")) +
+                                   geom_line(aes(x = r, y = pred_int_1), color = "gray54", alpha = 0.4) +
+                                   geom_line(aes(x = r, y = pred_int_2), color = "gray54", alpha = 0.4) +
+                                   geom_ribbon(aes(x = r, ymin = pred_int_1, ymax = pred_int_2), fill = "gray54", alpha = 0.4) +
+                                   geom_hline(yintercept = 0.025, linetype = "dashed") +
+                                   geom_point(aes(x = r, y = t1e, color = Theta_2)) +
+                                   geom_line(aes(x = r, y = t1e, color = Theta_2)) +
+                                   labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                   scale_color_manual(values = my_palette) +
+                                   scale_y_continuous(limits = c(0, 0.04)) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("B)") +
+                                   rremove("ylab"),
+                                 
+                                 ggplot(get_t1e_marg(results_scenarios_t1e_a_supp %>% filter(trend_pattern=="linear") %>% mutate(a = n_11/n_01), "a")) +
+                                   geom_line(aes(x = a, y = pred_int_1), color = "gray54", alpha = 0.4) +
+                                   geom_line(aes(x = a, y = pred_int_2), color = "gray54", alpha = 0.4) +
+                                   geom_ribbon(aes(x = a, ymin = pred_int_1, ymax = pred_int_2), fill = "gray54", alpha = 0.4) +
+                                   geom_hline(yintercept = 0.025, linetype = "dashed") +
+                                   geom_point(aes(x = a, y = t1e, color = Theta_2)) +
+                                   geom_line(aes(x = a, y = t1e, color = Theta_2)) +
+                                   labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                   scale_color_manual(values = my_palette) +
+                                   scale_y_continuous(limits = c(0, 0.04)) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("C)") +
+                                   rremove("ylab"),
+                                 
+                                 ggplot(get_t1e_marg(results_scenarios_t1e_lambda_supp %>% filter(trend_pattern=="linear"), "lambda0")) +
+                                   geom_line(aes(x = lambda0, y = pred_int_1), color = "gray54", alpha = 0.4) +
+                                   geom_line(aes(x = lambda0, y = pred_int_2), color = "gray54", alpha = 0.4) +
+                                   geom_ribbon(aes(x = lambda0, ymin = pred_int_1, ymax = pred_int_2), fill = "gray54", alpha = 0.4) +
+                                   geom_hline(yintercept = 0.025, linetype = "dashed") +
+                                   geom_point(aes(x = lambda0, y = t1e, color = Theta_2)) +
+                                   geom_line(aes(x = lambda0, y = t1e, color = Theta_2)) +
+                                   labs(x = TeX("$\\lambda$")) +
+                                   scale_color_manual(values = my_palette) +
+                                   scale_y_continuous(limits = c(0, 0.04)) +
+                                   scale_x_continuous(breaks = unique(results_scenarios_t1e_lambda$lambda0)) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") +
+                                   ggtitle("D)") +
+                                   rremove("ylab"),
+                                 
+                                 common.legend = T, legend = "bottom", nrow = 1)
+
+
+Fig_marg_t1e_linear <- annotate_figure(Fig_marg_t1e_linear, 
+                                       left = textGrob("Marginal type I error rate for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                       top = textGrob("Linear time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+
+
+Fig_marg_t1e_step <- ggarrange(ggplot(get_t1e_marg(results_scenarios_t1e_alpha1_supp %>% filter(trend_pattern=="stepwise"), "futility_bound")) +
+                                 geom_line(aes(x = futility_bound, y = pred_int_1), color = "gray54", alpha = 0.4) +
+                                 geom_line(aes(x = futility_bound, y = pred_int_2), color = "gray54", alpha = 0.4) +
+                                 geom_ribbon(aes(x = futility_bound, ymin = pred_int_1, ymax = pred_int_2), fill = "gray54", alpha = 0.4) +
+                                 geom_hline(yintercept = 0.025, linetype = "dashed") +
+                                 geom_point(aes(x = futility_bound, y = t1e, color = Theta_2)) +
+                                 geom_line(aes(x = futility_bound, y = t1e, color = Theta_2)) +
+                                 labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                                 scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                               TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                               TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                               TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1")), 
+                                                    values = my_palette) +
+                                 scale_y_continuous(limits = c(0, 0.04)) +
+                                 xlim(0,1) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("A)") +
+                                 rremove("ylab"),
+                               
+                               ggplot(get_t1e_marg(results_scenarios_t1e_r_supp %>% filter(trend_pattern=="stepwise") %>% mutate(r = n_01/n_02), "r")) +
+                                 geom_line(aes(x = r, y = pred_int_1), color = "gray54", alpha = 0.4) +
+                                 geom_line(aes(x = r, y = pred_int_2), color = "gray54", alpha = 0.4) +
+                                 geom_ribbon(aes(x = r, ymin = pred_int_1, ymax = pred_int_2), fill = "gray54", alpha = 0.4) +
+                                 geom_hline(yintercept = 0.025, linetype = "dashed") +
+                                 geom_point(aes(x = r, y = t1e, color = Theta_2)) +
+                                 geom_line(aes(x = r, y = t1e, color = Theta_2)) +
+                                 labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                 scale_color_manual(values = my_palette) +
+                                 scale_y_continuous(limits = c(0, 0.04)) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("B)") +
+                                 rremove("ylab"),
+                               
+                               ggplot(get_t1e_marg(results_scenarios_t1e_a_supp %>% filter(trend_pattern=="stepwise") %>% mutate(a = n_11/n_01), "a")) +
+                                 geom_line(aes(x = a, y = pred_int_1), color = "gray54", alpha = 0.4) +
+                                 geom_line(aes(x = a, y = pred_int_2), color = "gray54", alpha = 0.4) +
+                                 geom_ribbon(aes(x = a, ymin = pred_int_1, ymax = pred_int_2), fill = "gray54", alpha = 0.4) +
+                                 geom_hline(yintercept = 0.025, linetype = "dashed") +
+                                 geom_point(aes(x = a, y = t1e, color = Theta_2)) +
+                                 geom_line(aes(x = a, y = t1e, color = Theta_2)) +
+                                 labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                 scale_color_manual(values = my_palette) +
+                                 scale_y_continuous(limits = c(0, 0.04)) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("C)") +
+                                 rremove("ylab"),
+                               
+                               ggplot(get_t1e_marg(results_scenarios_t1e_lambda_supp %>% filter(trend_pattern=="stepwise"), "lambda0")) +
+                                 geom_line(aes(x = lambda0, y = pred_int_1), color = "gray54", alpha = 0.4) +
+                                 geom_line(aes(x = lambda0, y = pred_int_2), color = "gray54", alpha = 0.4) +
+                                 geom_ribbon(aes(x = lambda0, ymin = pred_int_1, ymax = pred_int_2), fill = "gray54", alpha = 0.4) +
+                                 geom_hline(yintercept = 0.025, linetype = "dashed") +
+                                 geom_point(aes(x = lambda0, y = t1e, color = Theta_2)) +
+                                 geom_line(aes(x = lambda0, y = t1e, color = Theta_2)) +
+                                 labs(x = TeX("$\\lambda$")) +
+                                 scale_color_manual(values = my_palette) +
+                                 scale_y_continuous(limits = c(0, 0.04)) +
+                                 scale_x_continuous(breaks = unique(results_scenarios_t1e_lambda$lambda0)) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") +
+                                 ggtitle("D)") +
+                                 rremove("ylab"),
+                               
+                               common.legend = T, legend = "bottom", nrow = 1)
+
+
+Fig_marg_t1e_step <- annotate_figure(Fig_marg_t1e_step, 
+                                     left = textGrob("Marginal type I error rate for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                     top = textGrob("Stepwise time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+ggarrange(Fig_marg_t1e_notrend, Fig_marg_t1e_linear, Fig_marg_t1e_step, ncol = 1)
+
+
+ggsave("figures/Fig_marg_t1e_supp.pdf", height = 12, width = 10)
+```
+
+
+
+## Marginal power
+
+```{r, fig.height=12, fig.width=10}
+get_power_marg <- function(Data, OP){
+  
+  return(Data %>%
+           select(!!OP, reject_h02_unadj, reject_h02_adj_theta1_per1, reject_h02_adj_theta1_per2, reject_h02_adj_theta1_per12, reject_h02_sep) %>%
+           pivot_longer(cols = c(-!!OP), names_to = "Theta_2", values_to = "pow") %>%
+           mutate(Theta_2 = factor(Theta_2, 
+                                   levels = c("reject_h02_unadj", "reject_h02_adj_theta1_per12", "reject_h02_adj_theta1_per2", "reject_h02_adj_theta1_per1", "reject_h02_sep"))))
+}
+
+my_palette = c("reject_h02_unadj" = "red4",
+               "reject_h02_adj_theta1_per12" = "royalblue3",
+               "reject_h02_adj_theta1_per2" = "darkorange2",
+               "reject_h02_adj_theta1_per1" = "chartreuse4",
+               "reject_h02_sep" = "black")
+
+
+
+Fig_marg_pow_notrend <- ggarrange(ggplot(get_power_marg(results_scenarios_pow_alpha1, "futility_bound")) +
+                                    geom_point(aes(x = futility_bound, y = pow, color = Theta_2)) +
+                                    geom_line(aes(x = futility_bound, y = pow, color = Theta_2)) +
+                                    labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                                    scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                                  TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                                  TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                                  TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1"),
+                                                                  "Separate analysis"), values = my_palette) +
+                                    ylim(0.78, 0.9) +
+                                    xlim(0, 1) +
+                                    theme_bw() +
+                                    theme(legend.position = "bottom") + 
+                                    ggtitle("A)") +
+                                    rremove("ylab"),
+                                  
+                                  ggplot(get_power_marg(results_scenarios_pow_r %>% mutate(r = n_01/n_02), "r")) +
+                                    geom_point(aes(x = r, y = pow, color = Theta_2)) +
+                                    geom_line(aes(x = r, y = pow, color = Theta_2)) +
+                                    labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                    scale_color_manual(values = my_palette) +
+                                    ylim(0.78, 0.9) +
+                                    theme_bw() +
+                                    theme(legend.position = "bottom") +
+                                    ggtitle("B)") +
+                                    rremove("ylab"),
+                                  
+                                  ggplot(get_power_marg(results_scenarios_pow_a %>% mutate(a = n_11/n_01), "a")) +
+                                    geom_point(aes(x = a, y = pow, color = Theta_2)) +
+                                    geom_line(aes(x = a, y = pow, color = Theta_2)) +
+                                    labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                    scale_color_manual(values = my_palette) +
+                                    ylim(0.78, 0.9) +
+                                    theme_bw() +
+                                    theme(legend.position = "bottom") + 
+                                    ggtitle("C)") +
+                                    rremove("ylab"),
+                                  
+                                  NA,
+                                  
+                                  common.legend = T, legend = "bottom", nrow = 1)
+
+
+
+Fig_marg_pow_notrend <- annotate_figure(Fig_marg_pow_notrend, 
+                                        left = textGrob("Marginal power for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                        top = textGrob("No time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+
+
+
+
+Fig_marg_pow_linear <- ggarrange(ggplot(get_power_marg(results_scenarios_pow_alpha1_supp %>% filter(trend_pattern=="linear"), "futility_bound")) +
+                                   geom_point(aes(x = futility_bound, y = pow, color = Theta_2)) +
+                                   geom_line(aes(x = futility_bound, y = pow, color = Theta_2)) +
+                                   labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                                   scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                                 TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                                 TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                                 TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1"),
+                                                                 "Separate analysis"), values = my_palette) +
+                                   ylim(0.78, 0.9) +
+                                   xlim(0, 1) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("A)") +
+                                   rremove("ylab"),
+                                 
+                                 ggplot(get_power_marg(results_scenarios_pow_r_supp %>% filter(trend_pattern=="linear") %>% mutate(r = n_01/n_02), "r")) +
+                                   geom_point(aes(x = r, y = pow, color = Theta_2)) +
+                                   geom_line(aes(x = r, y = pow, color = Theta_2)) +
+                                   labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                   scale_color_manual(values = my_palette) +
+                                   ylim(0.78, 0.9) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") +
+                                   ggtitle("B)") +
+                                   rremove("ylab"),
+                                 
+                                 ggplot(get_power_marg(results_scenarios_pow_a_supp %>% filter(trend_pattern=="linear") %>% mutate(a = n_11/n_01), "a")) +
+                                   geom_point(aes(x = a, y = pow, color = Theta_2)) +
+                                   geom_line(aes(x = a, y = pow, color = Theta_2)) +
+                                   labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                   scale_color_manual(values = my_palette) +
+                                   ylim(0.78, 0.9) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("C)") +
+                                   rremove("ylab"),
+                                 
+                                 ggplot(get_power_marg(results_scenarios_pow_lambda_supp %>% filter(trend_pattern=="linear"), "lambda0")) +
+                                   geom_point(aes(x = lambda0, y = pow, color = Theta_2)) +
+                                   geom_line(aes(x = lambda0, y = pow, color = Theta_2)) +
+                                   labs(x = TeX("$\\lambda$")) +
+                                   scale_color_manual(values = my_palette) +
+                                   ylim(0.78, 0.9) +
+                                   scale_x_continuous(breaks = unique(results_scenarios_pow_lambda$lambda0)) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("D)") +
+                                   rremove("ylab"),
+                                 
+                                 common.legend = T, legend = "bottom", nrow = 1)
+
+
+
+Fig_marg_pow_linear <- annotate_figure(Fig_marg_pow_linear, 
+                                       left = textGrob("Marginal power for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                       top = textGrob("Linear time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+
+
+Fig_marg_pow_step <- ggarrange(ggplot(get_power_marg(results_scenarios_pow_alpha1_supp %>% filter(trend_pattern=="stepwise"), "futility_bound")) +
+                                 geom_point(aes(x = futility_bound, y = pow, color = Theta_2)) +
+                                 geom_line(aes(x = futility_bound, y = pow, color = Theta_2)) +
+                                 labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                                 scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                               TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                               TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                               TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1"),
+                                                               "Separate analysis"), values = my_palette) +
+                                 ylim(0.78, 0.9) +
+                                 xlim(0, 1) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("A)") +
+                                 rremove("ylab"),
+                               
+                               ggplot(get_power_marg(results_scenarios_pow_r_supp %>% filter(trend_pattern=="stepwise") %>% mutate(r = n_01/n_02), "r")) +
+                                 geom_point(aes(x = r, y = pow, color = Theta_2)) +
+                                 geom_line(aes(x = r, y = pow, color = Theta_2)) +
+                                 labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                 scale_color_manual(values = my_palette) +
+                                 ylim(0.78, 0.9) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") +
+                                 ggtitle("B)") +
+                                 rremove("ylab"),
+                               
+                               ggplot(get_power_marg(results_scenarios_pow_a_supp %>% filter(trend_pattern=="stepwise") %>% mutate(a = n_11/n_01), "a")) +
+                                 geom_point(aes(x = a, y = pow, color = Theta_2)) +
+                                 geom_line(aes(x = a, y = pow, color = Theta_2)) +
+                                 labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                 scale_color_manual(values = my_palette) +
+                                 ylim(0.78, 0.9) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("C)") +
+                                 rremove("ylab"),
+                               
+                               ggplot(get_power_marg(results_scenarios_pow_lambda_supp %>% filter(trend_pattern=="stepwise"), "lambda0")) +
+                                 geom_point(aes(x = lambda0, y = pow, color = Theta_2)) +
+                                 geom_line(aes(x = lambda0, y = pow, color = Theta_2)) +
+                                 labs(x = TeX("$\\lambda$")) +
+                                 scale_color_manual(values = my_palette) +
+                                 ylim(0.78, 0.9) +
+                                 scale_x_continuous(breaks = unique(results_scenarios_pow_lambda$lambda0)) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("D)") +
+                                 rremove("ylab"),
+                               
+                               common.legend = T, legend = "bottom", nrow = 1)
+
+
+
+Fig_marg_pow_step <- annotate_figure(Fig_marg_pow_step, 
+                                     left = textGrob("Marginal power for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                     top = textGrob("Stepwise time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+ggarrange(Fig_marg_pow_notrend, Fig_marg_pow_linear, Fig_marg_pow_step, ncol = 1)
+
+
+ggsave("figures/Fig_marg_pow_supp.pdf", height = 12, width = 10)
+```
+
+
+
+## Conditional bias
+
+```{r, fig.height=10, fig.width=10}
+
+my_palette = c("arm2_unadj_cond" = "red4",
+               "arm2_adj_theta1_per12_cond" = "royalblue3",
+               "arm2_adj_theta1_per2_cond" = "darkorange2",
+               "arm2_adj_theta1_per1_cond" = "chartreuse4")
+
+
+Fig_cond_bias_linear <- ggarrange(ggplot(get_bias_cond(results_scenarios_t1e_alpha1_supp %>% filter(trend_pattern=="linear"), "futility_bound")) +
+                                    geom_point(aes(x = futility_bound, y = Bias_cond, color = Theta_2)) +
+                                    geom_line(aes(x = futility_bound, y = Bias_cond, color = Theta_2)) +
+                                    #geom_errorbar(aes(x = futility_bound, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), width = 0.04) +
+                                    labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                                    scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                                  TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                                  TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                                  TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1")), values = my_palette) +
+                                    #ylim(-0.014, 0.051) +
+                                    scale_y_continuous(n.breaks = 7, limits = c(-0.016, 0.055)) + 
+                                    xlim(0,1) +
+                                    theme_bw() +
+                                    theme(legend.position = "bottom") + 
+                                    ggtitle("A)") +
+                                    rremove("ylab"),
+                                  
+                                  ggplot(get_bias_cond(results_scenarios_t1e_r_supp %>% filter(trend_pattern=="linear") %>% mutate(r = n_01/n_02), "r")) +
+                                    geom_point(aes(x = r, y = Bias_cond, color = Theta_2)) +
+                                    geom_line(aes(x = r, y = Bias_cond, color = Theta_2)) +
+                                    # geom_errorbar(aes(x = r, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), width = 0.4) +
+                                    labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                    scale_color_manual(values = my_palette) +
+                                    #ylim(-0.014, 0.051) +
+                                    scale_y_continuous(n.breaks = 7, limits = c(-0.016, 0.055)) + 
+                                    theme_bw() +
+                                    theme(legend.position = "bottom") + 
+                                    ggtitle("B)") +
+                                    rremove("ylab"),
+                                  
+                                  ggplot(get_bias_cond(results_scenarios_t1e_a_supp %>% filter(trend_pattern=="linear") %>% mutate(a = n_11/n_01), "a")) +
+                                    geom_point(aes(x = a, y = Bias_cond, color = Theta_2)) +
+                                    geom_line(aes(x = a, y = Bias_cond, color = Theta_2)) +
+                                    # geom_errorbar(aes(x = a, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), width = 0.4) +
+                                    labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                    scale_color_manual(values = my_palette) +
+                                    #ylim(-0.014, 0.051) +
+                                    scale_y_continuous(n.breaks = 7, limits = c(-0.016, 0.055)) + 
+                                    theme_bw() +
+                                    theme(legend.position = "bottom") + 
+                                    ggtitle("C)") +
+                                    rremove("ylab"),
+                                  
+                                  ggplot(get_bias_cond(results_scenarios_t1e_lambda_supp %>% filter(trend_pattern=="linear"), "lambda0")) +
+                                    geom_point(aes(x = lambda0, y = Bias_cond, color = Theta_2)) +
+                                    geom_line(aes(x = lambda0, y = Bias_cond, color = Theta_2)) +
+                                    #geom_errorbar(aes(x = lambda0, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), 
+                                    #   width = 0.04 * ((0.15 - (-0.15))/(1-0))) +
+                                    labs(x = TeX("$\\lambda$")) +
+                                    scale_color_manual(values = my_palette) +
+                                    #ylim(-0.014, 0.051) +
+                                    scale_y_continuous(n.breaks = 7, limits = c(-0.016, 0.055)) + 
+                                    scale_x_continuous(breaks = unique(results_scenarios_t1e_lambda$lambda0)) +
+                                    theme_bw() +
+                                    theme(legend.position = "bottom") + 
+                                    ggtitle("D)") +
+                                    rremove("ylab"),
+                                  
+                                  common.legend = T, legend = "bottom", nrow = 1)
+
+Fig_cond_bias_linear <- annotate_figure(Fig_cond_bias_linear, 
+                                        left = textGrob("Conditional bias for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                        top = textGrob("Linear time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+Fig_cond_bias_step <- ggarrange(ggplot(get_bias_cond(results_scenarios_t1e_alpha1_supp %>% filter(trend_pattern=="stepwise"), "futility_bound")) +
+                                  geom_point(aes(x = futility_bound, y = Bias_cond, color = Theta_2)) +
+                                  geom_line(aes(x = futility_bound, y = Bias_cond, color = Theta_2)) +
+                                  #geom_errorbar(aes(x = futility_bound, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), width = 0.04) +
+                                  labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                                  scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                                TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                                TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                                TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1")), values = my_palette) +
+                                  #ylim(-0.014, 0.051) +
+                                  scale_y_continuous(n.breaks = 7, limits = c(-0.016, 0.055)) + 
+                                  xlim(0,1) +
+                                  theme_bw() +
+                                  theme(legend.position = "bottom") + 
+                                  ggtitle("A)") +
+                                  rremove("ylab"),
+                                
+                                ggplot(get_bias_cond(results_scenarios_t1e_r_supp %>% filter(trend_pattern=="stepwise") %>% mutate(r = n_01/n_02), "r")) +
+                                  geom_point(aes(x = r, y = Bias_cond, color = Theta_2)) +
+                                  geom_line(aes(x = r, y = Bias_cond, color = Theta_2)) +
+                                  # geom_errorbar(aes(x = r, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), width = 0.4) +
+                                  labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                  scale_color_manual(values = my_palette) +
+                                  #ylim(-0.014, 0.051) +
+                                  scale_y_continuous(n.breaks = 7, limits = c(-0.016, 0.055)) + 
+                                  theme_bw() +
+                                  theme(legend.position = "bottom") + 
+                                  ggtitle("B)") +
+                                  rremove("ylab"),
+                                
+                                ggplot(get_bias_cond(results_scenarios_t1e_a_supp %>% filter(trend_pattern=="stepwise") %>% mutate(a = n_11/n_01), "a")) +
+                                  geom_point(aes(x = a, y = Bias_cond, color = Theta_2)) +
+                                  geom_line(aes(x = a, y = Bias_cond, color = Theta_2)) +
+                                  # geom_errorbar(aes(x = a, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), width = 0.4) +
+                                  labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                  scale_color_manual(values = my_palette) +
+                                  #ylim(-0.014, 0.051) +
+                                  scale_y_continuous(n.breaks = 7, limits = c(-0.016, 0.055)) + 
+                                  theme_bw() +
+                                  theme(legend.position = "bottom") + 
+                                  ggtitle("C)") +
+                                  rremove("ylab"),
+                                
+                                ggplot(get_bias_cond(results_scenarios_t1e_lambda_supp %>% filter(trend_pattern=="stepwise"), "lambda0")) +
+                                  geom_point(aes(x = lambda0, y = Bias_cond, color = Theta_2)) +
+                                  geom_line(aes(x = lambda0, y = Bias_cond, color = Theta_2)) +
+                                  #geom_errorbar(aes(x = lambda0, y = Bias_cond, ymin = Bias_cond - sd_err_bias, ymax = Bias_cond + sd_err_bias, color = Theta_2), 
+                                  #   width = 0.04 * ((0.15 - (-0.15))/(1-0))) +
+                                  labs(x = TeX("$\\lambda$")) +
+                                  scale_color_manual(values = my_palette) +
+                                  #ylim(-0.014, 0.051) +
+                                  scale_y_continuous(n.breaks = 7, limits = c(-0.016, 0.055)) + 
+                                  scale_x_continuous(breaks = unique(results_scenarios_t1e_lambda$lambda0)) +
+                                  theme_bw() +
+                                  theme(legend.position = "bottom") + 
+                                  ggtitle("D)") +
+                                  rremove("ylab"),
+                                
+                                common.legend = T, legend = "bottom", nrow = 1)
+
+Fig_cond_bias_step <- annotate_figure(Fig_cond_bias_step, 
+                                      left = textGrob("Conditional bias for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                      top = textGrob("Stepwise time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+ggarrange(Fig_cond_bias_linear, Fig_cond_bias_step, ncol = 1)
+
+ggsave("figures/Fig_cond_bias_supp.pdf", height = 10, width = 10)
+```
+
+
+## Conditional rMSE
+
+```{r, fig.height=10, fig.width=10}
+my_palette = c("MSE_arm2_unadj_cond" = "red4",
+               "MSE_arm2_adj_theta1_per12_cond" = "royalblue3",
+               "MSE_arm2_adj_theta1_per2_cond" = "darkorange2",
+               "MSE_arm2_adj_theta1_per1_cond" = "chartreuse4",
+               "MSE_arm2_sep" = "black")
+
+
+
+Fig_cond_MSE_linear <- ggarrange(ggplot(get_MSE_cond(results_scenarios_t1e_alpha1_supp %>% filter(trend_pattern=="linear"), "futility_bound")) +
+                                   geom_point(aes(x = futility_bound, y = sqrt(MSE_cond), color = Theta_2)) +
+                                   geom_line(aes(x = futility_bound, y = sqrt(MSE_cond), color = Theta_2)) +
+                                   labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                                   scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                                 TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                                 TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                                 TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1"),
+                                                                 "Separate analysis"), values = my_palette) +
+                                   ylim(0.094, 0.12) +
+                                   xlim(0,1) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("A)") +
+                                   rremove("ylab"),
+                                 
+                                 ggplot(get_MSE_cond(results_scenarios_t1e_r_supp %>% filter(trend_pattern=="linear") %>% mutate(r = n_01/n_02), "r")) +
+                                   geom_point(aes(x = r, y = sqrt(MSE_cond), color = Theta_2)) +
+                                   geom_line(aes(x = r, y = sqrt(MSE_cond), color = Theta_2)) +
+                                   labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                   scale_color_manual(values = my_palette) +
+                                   ylim(0.094, 0.12) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("B)") +
+                                   rremove("ylab"),
+                                 
+                                 ggplot(get_MSE_cond(results_scenarios_t1e_a_supp %>% filter(trend_pattern=="linear") %>% mutate(a =  n_11/n_01), "a")) +
+                                   geom_point(aes(x = a, y = sqrt(MSE_cond), color = Theta_2)) +
+                                   geom_line(aes(x = a, y = sqrt(MSE_cond), color = Theta_2)) +
+                                   labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                   scale_color_manual(values = my_palette) +
+                                   ylim(0.094, 0.12) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("C)") +
+                                   rremove("ylab"),
+                                 
+                                 ggplot(get_MSE_cond(results_scenarios_t1e_lambda_supp %>% filter(trend_pattern=="linear"), "lambda0")) +
+                                   geom_point(aes(x = lambda0, y = sqrt(MSE_cond), color = Theta_2)) +
+                                   geom_line(aes(x = lambda0, y = sqrt(MSE_cond), color = Theta_2)) +
+                                   labs(x = TeX("$\\lambda$")) +
+                                   scale_color_manual(values = my_palette) +
+                                   ylim(0.094, 0.12) +
+                                   scale_x_continuous(breaks = unique(results_scenarios_t1e_lambda$lambda0)) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("D)") +
+                                   rremove("ylab"),
+                                 
+                                 common.legend = T, legend = "bottom", nrow = 1)
+
+
+
+Fig_cond_MSE_linear <- annotate_figure(Fig_cond_MSE_linear, 
+                                       left = textGrob("Conditional rMSE for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                       top = textGrob("Linear time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+Fig_cond_MSE_step <- ggarrange(ggplot(get_MSE_cond(results_scenarios_t1e_alpha1_supp %>% filter(trend_pattern=="stepwise"), "futility_bound")) +
+                                 geom_point(aes(x = futility_bound, y = sqrt(MSE_cond), color = Theta_2)) +
+                                 geom_line(aes(x = futility_bound, y = sqrt(MSE_cond), color = Theta_2)) +
+                                 labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                                 scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                               TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                               TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                               TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1"),
+                                                               "Separate analysis"), values = my_palette) +
+                                 ylim(0.094, 0.12) +
+                                 xlim(0,1) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("A)") +
+                                 rremove("ylab"),
+                               
+                               ggplot(get_MSE_cond(results_scenarios_t1e_r_supp %>% filter(trend_pattern=="stepwise") %>% mutate(r = n_01/n_02), "r")) +
+                                 geom_point(aes(x = r, y = sqrt(MSE_cond), color = Theta_2)) +
+                                 geom_line(aes(x = r, y = sqrt(MSE_cond), color = Theta_2)) +
+                                 labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                 scale_color_manual(values = my_palette) +
+                                 ylim(0.094, 0.12) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("B)") +
+                                 rremove("ylab"),
+                               
+                               ggplot(get_MSE_cond(results_scenarios_t1e_a_supp %>% filter(trend_pattern=="stepwise") %>% mutate(a =  n_11/n_01), "a")) +
+                                 geom_point(aes(x = a, y = sqrt(MSE_cond), color = Theta_2)) +
+                                 geom_line(aes(x = a, y = sqrt(MSE_cond), color = Theta_2)) +
+                                 labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                 scale_color_manual(values = my_palette) +
+                                 ylim(0.094, 0.12) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("C)") +
+                                 rremove("ylab"),
+                               
+                               ggplot(get_MSE_cond(results_scenarios_t1e_lambda_supp %>% filter(trend_pattern=="stepwise"), "lambda0")) +
+                                 geom_point(aes(x = lambda0, y = sqrt(MSE_cond), color = Theta_2)) +
+                                 geom_line(aes(x = lambda0, y = sqrt(MSE_cond), color = Theta_2)) +
+                                 labs(x = TeX("$\\lambda$")) +
+                                 scale_color_manual(values = my_palette) +
+                                 ylim(0.094, 0.12) +
+                                 scale_x_continuous(breaks = unique(results_scenarios_t1e_lambda$lambda0)) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("D)") +
+                                 rremove("ylab"),
+                               
+                               common.legend = T, legend = "bottom", nrow = 1)
+
+
+
+Fig_cond_MSE_step <- annotate_figure(Fig_cond_MSE_step, 
+                                     left = textGrob("Conditional rMSE for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                     top = textGrob("Stepwise time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+
+
+ggarrange(Fig_cond_MSE_linear, Fig_cond_MSE_step, ncol = 1)
+
+ggsave("figures/Fig_cond_MSE_supp.pdf", height = 10, width = 10)
+```
+
+
+## Conditional T1E
+
+```{r, fig.height=10, fig.width=10}
+
+my_palette = c("reject_h02_unadj_cond" = "red4",
+               "reject_h02_adj_theta1_per12_cond" = "royalblue3",
+               "reject_h02_adj_theta1_per2_cond" = "darkorange2",
+               "reject_h02_adj_theta1_per1_cond" = "chartreuse4")
+
+
+
+Fig_cond_t1e_linear <- ggarrange(ggplot(get_t1e_cond(results_scenarios_t1e_alpha1_supp %>% filter(trend_pattern=="linear"), "futility_bound")) +
+                                   geom_line(aes(x = futility_bound, y = pred_int_cond_1), color = "gray54", alpha = 0.4) +
+                                   geom_line(aes(x = futility_bound, y = pred_int_cond_2), color = "gray54", alpha = 0.4) +
+                                   geom_ribbon(aes(x = futility_bound, ymin = pred_int_cond_1, ymax = pred_int_cond_2), fill = "gray54", alpha = 0.4) +
+                                   geom_hline(yintercept = 0.025, linetype = "dashed") +
+                                   geom_point(aes(x = futility_bound, y = t1e_cond, color = Theta_2)) +
+                                   geom_line(aes(x = futility_bound, y = t1e_cond, color = Theta_2)) +
+                                   labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                                   scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                                 TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                                 TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                                 TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1")), values = my_palette) +
+                                   scale_y_continuous(limits = c(0, 0.075), n.breaks = 6, breaks = seq(0, 0.075, by = 0.0125), labels = seq(0, 0.075, by = 0.0125)) +
+                                   xlim(0,1) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("A)") +
+                                   rremove("ylab"),
+                                 
+                                 ggplot(get_t1e_cond(results_scenarios_t1e_r_supp %>% filter(trend_pattern=="linear") %>% mutate(r = n_01/n_02), "r")) +
+                                   geom_line(aes(x = r, y = pred_int_cond_1), color = "gray54", alpha = 0.4) +
+                                   geom_line(aes(x = r, y = pred_int_cond_2), color = "gray54", alpha = 0.4) +
+                                   geom_ribbon(aes(x = r, ymin = pred_int_cond_1, ymax = pred_int_cond_2), fill = "gray54", alpha = 0.4) +
+                                   geom_hline(yintercept = 0.025, linetype = "dashed") +
+                                   geom_point(aes(x = r, y = t1e_cond, color = Theta_2)) +
+                                   geom_line(aes(x = r, y = t1e_cond, color = Theta_2)) +
+                                   labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                   scale_color_manual(values = my_palette) +
+                                   scale_y_continuous(limits = c(0, 0.075), n.breaks = 6, breaks = seq(0, 0.075, by = 0.0125), labels = seq(0, 0.075, by = 0.0125)) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("B)") +
+                                   rremove("ylab"),
+                                 
+                                 ggplot(get_t1e_cond(results_scenarios_t1e_a_supp %>% filter(trend_pattern=="linear") %>% mutate(a = n_11/n_01), "a")) +
+                                   geom_line(aes(x = a, y = pred_int_cond_1), color = "gray54", alpha = 0.4) +
+                                   geom_line(aes(x = a, y = pred_int_cond_2), color = "gray54", alpha = 0.4) +
+                                   geom_ribbon(aes(x = a, ymin = pred_int_cond_1, ymax = pred_int_cond_2), fill = "gray54", alpha = 0.4) +
+                                   geom_hline(yintercept = 0.025, linetype = "dashed") +
+                                   geom_point(aes(x = a, y = t1e_cond, color = Theta_2)) +
+                                   geom_line(aes(x = a, y = t1e_cond, color = Theta_2)) +
+                                   labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                   scale_color_manual(values = my_palette) +
+                                   scale_y_continuous(limits = c(0, 0.075), n.breaks = 6, breaks = seq(0, 0.075, by = 0.0125), labels = seq(0, 0.075, by = 0.0125)) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("C)") +
+                                   rremove("ylab"),
+                                 
+                                 ggplot(get_t1e_cond(results_scenarios_t1e_lambda_supp %>% filter(trend_pattern=="linear"), "lambda0")) +
+                                   geom_line(aes(x = lambda0, y = pred_int_cond_1), color = "gray54", alpha = 0.4) +
+                                   geom_line(aes(x = lambda0, y = pred_int_cond_2), color = "gray54", alpha = 0.4) +
+                                   geom_ribbon(aes(x = lambda0, ymin = pred_int_cond_1, ymax = pred_int_cond_2), fill = "gray54", alpha = 0.4) +
+                                   geom_hline(yintercept = 0.025, linetype = "dashed") +
+                                   geom_point(aes(x = lambda0, y = t1e_cond, color = Theta_2)) +
+                                   geom_line(aes(x = lambda0, y = t1e_cond, color = Theta_2)) +
+                                   labs(x = TeX("$\\lambda$")) +
+                                   scale_color_manual(values = my_palette) +
+                                   scale_y_continuous(limits = c(0, 0.075), n.breaks = 6, breaks = seq(0, 0.075, by = 0.0125), labels = seq(0, 0.075, by = 0.0125)) +
+                                   scale_x_continuous(breaks = unique(results_scenarios_t1e_lambda$lambda0)) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("D)") +
+                                   rremove("ylab"),
+                                 
+                                 common.legend = T, legend = "bottom", nrow = 1)
+
+
+
+Fig_cond_t1e_linear <- annotate_figure(Fig_cond_t1e_linear, 
+                                       left = textGrob("Conditional type I error rate for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                       top = textGrob("Linear time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+
+Fig_cond_t1e_step <- ggarrange(ggplot(get_t1e_cond(results_scenarios_t1e_alpha1_supp %>% filter(trend_pattern=="stepwise"), "futility_bound")) +
+                                 geom_line(aes(x = futility_bound, y = pred_int_cond_1), color = "gray54", alpha = 0.4) +
+                                 geom_line(aes(x = futility_bound, y = pred_int_cond_2), color = "gray54", alpha = 0.4) +
+                                 geom_ribbon(aes(x = futility_bound, ymin = pred_int_cond_1, ymax = pred_int_cond_2), fill = "gray54", alpha = 0.4) +
+                                 geom_hline(yintercept = 0.025, linetype = "dashed") +
+                                 geom_point(aes(x = futility_bound, y = t1e_cond, color = Theta_2)) +
+                                 geom_line(aes(x = futility_bound, y = t1e_cond, color = Theta_2)) +
+                                 labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                                 scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                               TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                               TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                               TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1")), values = my_palette) +
+                                 scale_y_continuous(limits = c(0, 0.075), n.breaks = 6, breaks = seq(0, 0.075, by = 0.0125), labels = seq(0, 0.075, by = 0.0125)) +
+                                 xlim(0,1) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("A)") +
+                                 rremove("ylab"),
+                               
+                               ggplot(get_t1e_cond(results_scenarios_t1e_r_supp %>% filter(trend_pattern=="stepwise") %>% mutate(r = n_01/n_02), "r")) +
+                                 geom_line(aes(x = r, y = pred_int_cond_1), color = "gray54", alpha = 0.4) +
+                                 geom_line(aes(x = r, y = pred_int_cond_2), color = "gray54", alpha = 0.4) +
+                                 geom_ribbon(aes(x = r, ymin = pred_int_cond_1, ymax = pred_int_cond_2), fill = "gray54", alpha = 0.4) +
+                                 geom_hline(yintercept = 0.025, linetype = "dashed") +
+                                 geom_point(aes(x = r, y = t1e_cond, color = Theta_2)) +
+                                 geom_line(aes(x = r, y = t1e_cond, color = Theta_2)) +
+                                 labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                 scale_color_manual(values = my_palette) +
+                                 scale_y_continuous(limits = c(0, 0.075), n.breaks = 6, breaks = seq(0, 0.075, by = 0.0125), labels = seq(0, 0.075, by = 0.0125)) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("B)") +
+                                 rremove("ylab"),
+                               
+                               ggplot(get_t1e_cond(results_scenarios_t1e_a_supp %>% filter(trend_pattern=="stepwise") %>% mutate(a = n_11/n_01), "a")) +
+                                 geom_line(aes(x = a, y = pred_int_cond_1), color = "gray54", alpha = 0.4) +
+                                 geom_line(aes(x = a, y = pred_int_cond_2), color = "gray54", alpha = 0.4) +
+                                 geom_ribbon(aes(x = a, ymin = pred_int_cond_1, ymax = pred_int_cond_2), fill = "gray54", alpha = 0.4) +
+                                 geom_hline(yintercept = 0.025, linetype = "dashed") +
+                                 geom_point(aes(x = a, y = t1e_cond, color = Theta_2)) +
+                                 geom_line(aes(x = a, y = t1e_cond, color = Theta_2)) +
+                                 labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                 scale_color_manual(values = my_palette) +
+                                 scale_y_continuous(limits = c(0, 0.075), n.breaks = 6, breaks = seq(0, 0.075, by = 0.0125), labels = seq(0, 0.075, by = 0.0125)) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("C)") +
+                                 rremove("ylab"),
+                               
+                               ggplot(get_t1e_cond(results_scenarios_t1e_lambda_supp %>% filter(trend_pattern=="stepwise"), "lambda0")) +
+                                 geom_line(aes(x = lambda0, y = pred_int_cond_1), color = "gray54", alpha = 0.4) +
+                                 geom_line(aes(x = lambda0, y = pred_int_cond_2), color = "gray54", alpha = 0.4) +
+                                 geom_ribbon(aes(x = lambda0, ymin = pred_int_cond_1, ymax = pred_int_cond_2), fill = "gray54", alpha = 0.4) +
+                                 geom_hline(yintercept = 0.025, linetype = "dashed") +
+                                 geom_point(aes(x = lambda0, y = t1e_cond, color = Theta_2)) +
+                                 geom_line(aes(x = lambda0, y = t1e_cond, color = Theta_2)) +
+                                 labs(x = TeX("$\\lambda$")) +
+                                 scale_color_manual(values = my_palette) +
+                                 scale_y_continuous(limits = c(0, 0.075), n.breaks = 6, breaks = seq(0, 0.075, by = 0.0125), labels = seq(0, 0.075, by = 0.0125)) +
+                                 scale_x_continuous(breaks = unique(results_scenarios_t1e_lambda$lambda0)) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("D)") +
+                                 rremove("ylab"),
+                               
+                               common.legend = T, legend = "bottom", nrow = 1)
+
+
+
+Fig_cond_t1e_step <- annotate_figure(Fig_cond_t1e_step, 
+                                     left = textGrob("Conditional type I error rate for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                     top = textGrob("Stepwise time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+ggarrange(Fig_cond_t1e_linear, Fig_cond_t1e_step, ncol = 1)
+
+ggsave("figures/Fig_cond_t1e_supp.pdf", height = 10, width = 10)
+```
+
+
+## Conditional power
+
+```{r, fig.height=10, fig.width=10}
+my_palette = c("reject_h02_unadj_cond" = "red4",
+               "reject_h02_adj_theta1_per12_cond" = "royalblue3",
+               "reject_h02_adj_theta1_per2_cond" = "darkorange2",
+               "reject_h02_adj_theta1_per1_cond" = "chartreuse4",
+               "reject_h02_sep" = "black")
+
+
+
+Fig_cond_pow_linear <- ggarrange(ggplot(get_power_cond(results_scenarios_pow_alpha1_supp %>% filter(trend_pattern=="linear"), "futility_bound")) +
+                                   geom_point(aes(x = futility_bound, y = pow_cond, color = Theta_2)) +
+                                   geom_line(aes(x = futility_bound, y = pow_cond, color = Theta_2)) +
+                                   labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                                   scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                                 TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                                 TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                                 TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1"),
+                                                                 "Separate analysis"), values = my_palette) +
+                                   ylim(0.783, 0.953) +
+                                   xlim(0, 1) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("A)") +
+                                   rremove("ylab"),
+                                 
+                                 ggplot(get_power_cond(results_scenarios_pow_r_supp %>% filter(trend_pattern=="linear") %>% mutate(r = n_01/n_02), "r")) +
+                                   geom_point(aes(x = r, y = pow_cond, color = Theta_2)) +
+                                   geom_line(aes(x = r, y = pow_cond, color = Theta_2)) +
+                                   labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                   scale_color_manual(values = my_palette) +
+                                   ylim(0.783, 0.953) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") +
+                                   ggtitle("B)") +
+                                   rremove("ylab"),
+                                 
+                                 ggplot(get_power_cond(results_scenarios_pow_a_supp %>% filter(trend_pattern=="linear") %>% mutate(a = n_11/n_01), "a")) +
+                                   geom_point(aes(x = a, y = pow_cond, color = Theta_2)) +
+                                   geom_line(aes(x = a, y = pow_cond, color = Theta_2)) +
+                                   labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                   scale_color_manual(values = my_palette) +
+                                   ylim(0.783, 0.953) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("C)") +
+                                   rremove("ylab"),
+                                 
+                                 ggplot(get_power_cond(results_scenarios_pow_lambda_supp %>% filter(trend_pattern=="linear"), "lambda0")) +
+                                   geom_point(aes(x = lambda0, y = pow_cond, color = Theta_2)) +
+                                   geom_line(aes(x = lambda0, y = pow_cond, color = Theta_2)) +
+                                   labs(x = TeX("$\\lambda$")) +
+                                   scale_color_manual(values = my_palette) +
+                                   ylim(0.783, 0.953) +
+                                   scale_x_continuous(breaks = unique(results_scenarios_pow_lambda$lambda0)) +
+                                   theme_bw() +
+                                   theme(legend.position = "bottom") + 
+                                   ggtitle("D)") +
+                                   rremove("ylab"),
+                                 
+                                 common.legend = T, legend = "bottom", nrow = 1)
+
+
+
+Fig_cond_pow_linear <- annotate_figure(Fig_cond_pow_linear, 
+                                       left = textGrob("Conditional power for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                       top = textGrob("Linear time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+
+Fig_cond_pow_step <- ggarrange(ggplot(get_power_cond(results_scenarios_pow_alpha1_supp %>% filter(trend_pattern=="stepwise"), "futility_bound")) +
+                                 geom_point(aes(x = futility_bound, y = pow_cond, color = Theta_2)) +
+                                 geom_line(aes(x = futility_bound, y = pow_cond, color = Theta_2)) +
+                                 labs(x = TeX("Futility bound $\\alpha_1$"), color = TeX("Estimator for $\\theta_2$:")) +
+                                 scale_color_manual(labels = c(TeX("${\\tilde{\\theta}}_2$"),
+                                                               TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from periods 1 and 2"), 
+                                                               TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 2"),
+                                                               TeX("$\\tilde{\\tilde{\\theta}}_2$ with $\\hat{\\theta}_1$ from period 1"),
+                                                               "Separate analysis"), values = my_palette) +
+                                 ylim(0.783, 0.953) +
+                                 xlim(0, 1) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("A)") +
+                                 rremove("ylab"),
+                               
+                               ggplot(get_power_cond(results_scenarios_pow_r_supp %>% filter(trend_pattern=="stepwise") %>% mutate(r = n_01/n_02), "r")) +
+                                 geom_point(aes(x = r, y = pow_cond, color = Theta_2)) +
+                                 geom_line(aes(x = r, y = pow_cond, color = Theta_2)) +
+                                 labs(x = TeX("$r = n_{0\\1}/n_{0\\2} = n_{1\\1}/n_{1\\2}$")) +
+                                 scale_color_manual(values = my_palette) +
+                                 ylim(0.783, 0.953) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") +
+                                 ggtitle("B)") +
+                                 rremove("ylab"),
+                               
+                               ggplot(get_power_cond(results_scenarios_pow_a_supp %>% filter(trend_pattern=="stepwise") %>% mutate(a = n_11/n_01), "a")) +
+                                 geom_point(aes(x = a, y = pow_cond, color = Theta_2)) +
+                                 geom_line(aes(x = a, y = pow_cond, color = Theta_2)) +
+                                 labs(x = TeX("$a = n_{1\\1}/n_{0\\1} = n_{1\\2}/n_{0\\2}$")) +
+                                 scale_color_manual(values = my_palette) +
+                                 ylim(0.783, 0.953) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("C)") +
+                                 rremove("ylab"),
+                               
+                               ggplot(get_power_cond(results_scenarios_pow_lambda_supp %>% filter(trend_pattern=="stepwise"), "lambda0")) +
+                                 geom_point(aes(x = lambda0, y = pow_cond, color = Theta_2)) +
+                                 geom_line(aes(x = lambda0, y = pow_cond, color = Theta_2)) +
+                                 labs(x = TeX("$\\lambda$")) +
+                                 scale_color_manual(values = my_palette) +
+                                 ylim(0.783, 0.953) +
+                                 scale_x_continuous(breaks = unique(results_scenarios_pow_lambda$lambda0)) +
+                                 theme_bw() +
+                                 theme(legend.position = "bottom") + 
+                                 ggtitle("D)") +
+                                 rremove("ylab"),
+                               
+                               common.legend = T, legend = "bottom", nrow = 1)
+
+
+
+Fig_cond_pow_step <- annotate_figure(Fig_cond_pow_step, 
+                                     left = textGrob("Conditional power for arm 2", rot = 90, vjust = 0.4, hjust = 0.35, gp = gpar(cex = 1)),
+                                     top = textGrob("Stepwise time trend", gp = gpar(cex = 1.2, fontface = "bold")))
+
+
+ggarrange(Fig_cond_pow_linear, Fig_cond_pow_step, ncol = 1)
+
+ggsave("figures/Fig_cond_pow_supp.pdf", height = 10, width = 10)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

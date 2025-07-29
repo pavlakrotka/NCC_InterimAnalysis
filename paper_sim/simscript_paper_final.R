@@ -151,12 +151,12 @@ df_scenarios_t1e_alpha1_supp <- data.frame(n_01 = 150,
                                            
                                            alpha = 0.025,
                                            
-                                           futility_bound = c(0.1, 0.15, 0.2, 0.25, 0.50, 0.65, 0.75, 0.95),
+                                           futility_bound = c(0.1, 0.15, 0.2, 0.25, 0.35, 0.50, 0.65, 0.75, 0.95),
                                            
                                            lambda0 = 0.15,
                                            lambda1 = 0.15,
                                            lambda2 = 0.15,
-                                           trend_pattern = c(rep("linear", 8), rep("stepwise", 8)),
+                                           trend_pattern = c(rep("linear", 9), rep("stepwise", 9)),
                                            
                                            period_blocks = 2,
                                            B_boot = 1000)
@@ -258,7 +258,7 @@ write_csv(results_scenarios_t1e_lambda_supp, "results_final/results_scenarios_t1
 
 
 
-# ALTERNATIVE HYPOTHESIS  - MAIN PAPER ----
+# ALTERNATIVE HYPOTHESIS - MAIN PAPER ----
 
 ## Varying alpha_1 ----
 
@@ -276,7 +276,7 @@ df_scenarios_pow_alpha1 <- data.frame(n_01 = 150,
                                       
                                       alpha = 0.025,
                                       
-                                      futility_bound = c(0.1, 0.15, 0.2, 0.25, 0.50, 0.65, 0.75, 0.95),
+                                      futility_bound = c(0.1, 0.15, 0.2, 0.25, 0.35, 0.50, 0.65, 0.75, 0.95),
                                       
                                       lambda0 = 0,
                                       lambda1 = 0,
@@ -402,12 +402,12 @@ df_scenarios_pow_alpha1_supp <- data.frame(n_01 = 150,
                                            
                                            alpha = 0.025,
                                            
-                                           futility_bound = c(0.1, 0.15, 0.2, 0.25, 0.50, 0.65, 0.75, 0.95),
+                                           futility_bound = c(0.1, 0.15, 0.2, 0.25, 0.35, 0.50, 0.65, 0.75, 0.95),
                                            
                                            lambda0 = 0.15,
                                            lambda1 = 0.15,
                                            lambda2 = 0.15,
-                                           trend_pattern = c(rep("linear", 8), rep("stepwise", 8)),
+                                           trend_pattern = c(rep("linear", 9), rep("stepwise", 9)),
                                            
                                            period_blocks = 2,
                                            B_boot = 1000)

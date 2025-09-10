@@ -16,6 +16,7 @@ bootstrap_stratified_withIA <- function(Data, theta, sigma, futility_bound, B_bo
   mae_boot_adj_theta1_per12 <- rep(NA, B_boot) 
   mae_boot_adj_theta1_per1 <- rep(NA, B_boot)
   mae_boot_adj_theta1_per2 <- rep(NA, B_boot) 
+  mae_boot_adj_theta1_rao <- rep(NA, B_boot) 
   
   boot_stop <- 0
   
@@ -56,6 +57,7 @@ bootstrap_stratified_withIA <- function(Data, theta, sigma, futility_bound, B_bo
       mae_boot_adj_theta1_per12[B_boot - B_boot_aux +1] <- MAEs_boot$theta2_tilde_adj_theta1_per12
       mae_boot_adj_theta1_per1[B_boot - B_boot_aux +1] <- MAEs_boot$theta2_tilde_adj_theta1_per1
       mae_boot_adj_theta1_per2[B_boot - B_boot_aux +1] <- MAEs_boot$theta2_tilde_adj_theta1_per2
+      mae_boot_adj_theta1_rao[B_boot - B_boot_aux +1] <- MAEs_boot$theta2_tilde_adj_theta1_rao
       
       B_boot_aux <- B_boot_aux-1 # for while loop
       
@@ -68,12 +70,14 @@ bootstrap_stratified_withIA <- function(Data, theta, sigma, futility_bound, B_bo
   var_boot_est_adj_theta1_per12 <- 1/B_boot * sum((mae_boot_adj_theta1_per12-mean(mae_boot_adj_theta1_per12))^2)
   var_boot_est_adj_theta1_per1 <- 1/B_boot * sum((mae_boot_adj_theta1_per1-mean(mae_boot_adj_theta1_per1))^2)
   var_boot_est_adj_theta1_per2 <- 1/B_boot * sum((mae_boot_adj_theta1_per2-mean(mae_boot_adj_theta1_per2))^2)
+  var_boot_est_adj_theta1_rao <- 1/B_boot * sum((mae_boot_adj_theta1_rao-mean(mae_boot_adj_theta1_rao))^2)
   
   return(list(var_boot_est_unadj = var_boot_est_unadj,
               var_boot_est_adj_theta1_true = var_boot_est_adj_theta1_true,
               var_boot_est_adj_theta1_per12 = var_boot_est_adj_theta1_per12,
               var_boot_est_adj_theta1_per1 = var_boot_est_adj_theta1_per1,
               var_boot_est_adj_theta1_per2 = var_boot_est_adj_theta1_per2,
+              var_boot_est_adj_theta1_rao = var_boot_est_adj_theta1_rao,
               check = length(mae_boot_adj_theta1_per2),
               boot_stop = boot_stop))
 }

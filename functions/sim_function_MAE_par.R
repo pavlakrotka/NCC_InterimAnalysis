@@ -39,7 +39,7 @@ sim_function_MAE_par <- function(scenarios_df, nsim, perc_cores = 0.99){
                       n_12 = scenarios_df$n_12[i],
                       n_22 = scenarios_df$n_22[i],
                       
-                      mu0 = scenarios_df$mu[i],
+                      mu0 = scenarios_df$mu0[i],
                       theta = theta_i,
                       sigma = scenarios_df$sigma[i],
                       
@@ -60,16 +60,19 @@ sim_function_MAE_par <- function(scenarios_df, nsim, perc_cores = 0.99){
                            var(unlist(as.data.frame(res)$theta2_tilde_adj_theta1_per12)),
                            var(unlist(as.data.frame(res)$theta2_tilde_adj_theta1_per1)),
                            var(unlist(as.data.frame(res)$theta2_tilde_adj_theta1_per2)),
+                           var(unlist(as.data.frame(res)$theta2_tilde_adj_theta1_rao)),
                            var(unlist(as.data.frame(res)$theta2_tilde_unadj_cond), na.rm = T),
                            var(unlist(as.data.frame(res)$theta2_tilde_adj_theta1_true_cond), na.rm = T),
                            var(unlist(as.data.frame(res)$theta2_tilde_adj_theta1_per12_cond), na.rm = T),
                            var(unlist(as.data.frame(res)$theta2_tilde_adj_theta1_per1_cond), na.rm = T),
                            var(unlist(as.data.frame(res)$theta2_tilde_adj_theta1_per2_cond), na.rm = T),
+                           var(unlist(as.data.frame(res)$theta2_tilde_adj_theta1_rao_cond), na.rm = T),
                            var(unlist(as.data.frame(res)$theta2_tilde_unadj_stop), na.rm = T),
                            var(unlist(as.data.frame(res)$bias_est_theta1_true), na.rm = T),
                            var(unlist(as.data.frame(res)$bias_est_theta1_per12), na.rm = T),
                            var(unlist(as.data.frame(res)$bias_est_theta1_per1), na.rm = T),
                            var(unlist(as.data.frame(res)$bias_est_theta1_per2), na.rm = T),
+                           var(unlist(as.data.frame(res)$bias_est_theta1_rao), na.rm = T),
                            
                            
                            sd(unlist(as.data.frame(res)$bias_arm2_unadj), na.rm = T),
@@ -77,12 +80,14 @@ sim_function_MAE_par <- function(scenarios_df, nsim, perc_cores = 0.99){
                            sd(unlist(as.data.frame(res)$bias_arm2_adj_theta1_per12), na.rm = T),
                            sd(unlist(as.data.frame(res)$bias_arm2_adj_theta1_per1), na.rm = T),
                            sd(unlist(as.data.frame(res)$bias_arm2_adj_theta1_per2), na.rm = T),
+                           sd(unlist(as.data.frame(res)$bias_arm2_adj_theta1_rao), na.rm = T),
                            
                            sd(unlist(as.data.frame(res)$bias_arm2_unadj_cond), na.rm = T),
                            sd(unlist(as.data.frame(res)$bias_arm2_adj_theta1_true_cond), na.rm = T),
                            sd(unlist(as.data.frame(res)$bias_arm2_adj_theta1_per12_cond), na.rm = T),
                            sd(unlist(as.data.frame(res)$bias_arm2_adj_theta1_per1_cond), na.rm = T),
-                           sd(unlist(as.data.frame(res)$bias_arm2_adj_theta1_per2_cond), na.rm = T)))
+                           sd(unlist(as.data.frame(res)$bias_arm2_adj_theta1_per2_cond), na.rm = T),
+                           sd(unlist(as.data.frame(res)$bias_arm2_adj_theta1_rao_cond), na.rm = T)))
     
     print(paste0("Scenario ", i, "/", nrow(scenarios_df), " done. Time: ", Sys.time()))
     
@@ -97,26 +102,31 @@ sim_function_MAE_par <- function(scenarios_df, nsim, perc_cores = 0.99){
                          "var_theta2_tilde_adj_theta1_per12",
                          "var_theta2_tilde_adj_theta1_per1",
                          "var_theta2_tilde_adj_theta1_per2",
+                         "var_theta2_tilde_adj_theta1_rao",
                          "var_theta2_tilde_unadj_cond",
                          "var_theta2_tilde_adj_theta1_true_cond",
                          "var_theta2_tilde_adj_theta1_per12_cond",
                          "var_theta2_tilde_adj_theta1_per1_cond",
                          "var_theta2_tilde_adj_theta1_per2_cond",
+                         "var_theta2_tilde_adj_theta1_rao_cond",
                          "var_theta2_tilde_unadj_stop",
                          "var_bias_est_theta1_true",
                          "var_bias_est_theta1_per12",
                          "var_bias_est_theta1_per1",
                          "var_bias_est_theta1_per2",
+                         "var_bias_est_theta1_rao",
                          "sd_bias_arm2_unadj" ,
                          "sd_bias_arm2_adj_theta1_true",
                          "sd_bias_arm2_adj_theta1_per12",
                          "sd_bias_arm2_adj_theta1_per1",
                          "sd_bias_arm2_adj_theta1_per2",
+                         "sd_bias_arm2_adj_theta1_rao",
                          "sd_bias_arm2_unadj_cond",
                          "sd_bias_arm2_adj_theta1_true_cond",
                          "sd_bias_arm2_adj_theta1_per12_cond",
                          "sd_bias_arm2_adj_theta1_per1_cond",
-                         "sd_bias_arm2_adj_theta1_per2_cond")
+                         "sd_bias_arm2_adj_theta1_per2_cond",
+                         "sd_bias_arm2_adj_theta1_rao_cond")
   
   
   plan(strategy = "sequential")

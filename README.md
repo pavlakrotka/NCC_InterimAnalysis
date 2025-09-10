@@ -1,13 +1,13 @@
-On the inclusion of non-concurrent controls in platform trials with an
-interim analysis
+On the inclusion of non-concurrent controls in platform trials with a
+futility interim analysis
 ================
 
 This is an accompanying repository for the paper *“On the inclusion of
-non-concurrent controls in platform trials with an interim analysis’’*
-by Pavla Krotka, Martin Posch, and Marta Bofill Roig. It contains the
-code to reproduce all simulations and figures presented in the
-manuscript and supplementary material.
-<!-- "[On the inclusion of non-concurrent controls in platform trials with an interim analysis](https://arxiv.org)". -->
+non-concurrent controls in platform trials with a futility interim
+analysis’’* by Pavla Krotka, Martin Posch, and Marta Bofill Roig. It
+contains the code to reproduce all simulations and figures presented in
+the manuscript and supplementary material.
+<!-- "[On the inclusion of non-concurrent controls in platform trials with a futility interim analysis](https://arxiv.org)". -->
 
 The repository is structured as follows:
 
@@ -17,8 +17,8 @@ The repository is structured as follows:
   study:
 
   - `runtrial_IA_MAE.R` - function for running a platform trial with 2
-    treatment arms and an interim analysis of arm 1 at the time of
-    adding the arm 2, where arm 2 is evaluated using the mean adjusted
+    treatment arms and an interim analysis of Arm 1 at the time of
+    adding the Arm 2, where Arm 2 is evaluated using the mean adjusted
     estimator
   - `get_mae.R` - function for computing the mean adjusted estimator
   - `bootstrap_functions.R` - function for performing stratified

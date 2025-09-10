@@ -174,9 +174,9 @@ runtrial_IA_MAE <- function(n_01 = 100,
   if (Z_1<c_1) { # arm 1 stops for futility
     Data_stage_2 <- Data[Data$period_2==2,]
     
-    theta2_tilde_unadj <- theta2_tilde_adj_theta1_true <- theta2_tilde_adj_theta1_per12 <- theta2_tilde_adj_theta1_per1 <- theta2_tilde_adj_theta1_per2 <- mean(Data_stage_2[Data_stage_2$treatment==2,]$response) - mean(Data_stage_2[Data_stage_2$treatment==0,]$response)
+    theta2_tilde_unadj <- theta2_tilde_adj_theta1_true <- theta2_tilde_adj_theta1_per12 <- theta2_tilde_adj_theta1_per1 <- theta2_tilde_adj_theta1_per2 <- theta2_tilde_adj_theta1_rao <- mean(Data_stage_2[Data_stage_2$treatment==2,]$response) - mean(Data_stage_2[Data_stage_2$treatment==0,]$response)
     
-    bias_arm2_unadj <- bias_arm2_adj_theta1_true <- bias_arm2_adj_theta1_per12 <- bias_arm2_adj_theta1_per1 <- bias_arm2_adj_theta1_per2 <- theta2_tilde_unadj - theta[2]
+    bias_arm2_unadj <- bias_arm2_adj_theta1_true <- bias_arm2_adj_theta1_per12 <- bias_arm2_adj_theta1_per1 <- bias_arm2_adj_theta1_per2 <- bias_arm2_adj_theta1_rao <- theta2_tilde_unadj - theta[2]
     
     theta2_tilde_unadj_stop <- mean(Data_stage_2[Data_stage_2$treatment==2,]$response) - mean(Data_stage_2[Data_stage_2$treatment==0,]$response)
     
@@ -185,7 +185,7 @@ runtrial_IA_MAE <- function(n_01 = 100,
     # Z-test for arm 2
     Z_stat <- theta2_tilde_unadj / sqrt(sigma^2/n_02 + sigma^2/n_22)
     
-    reject_h02_unadj <- reject_h02_adj_theta1_true <- reject_h02_adj_theta1_per12 <- reject_h02_adj_theta1_per1 <- reject_h02_adj_theta1_per2 <- Z_stat > qnorm(1-alpha)
+    reject_h02_unadj <- reject_h02_adj_theta1_true <- reject_h02_adj_theta1_per12 <- reject_h02_adj_theta1_per1 <- reject_h02_adj_theta1_per2 <- reject_h02_adj_theta1_rao <- Z_stat > qnorm(1-alpha)
     
     reject_h02_unadj_stop <- Z_stat > qnorm(1-alpha)
     
@@ -196,29 +196,34 @@ runtrial_IA_MAE <- function(n_01 = 100,
     var_boot_est_adj_theta1_per12 <- NA
     var_boot_est_adj_theta1_per1 <- NA
     var_boot_est_adj_theta1_per2 <- NA
+    var_boot_est_adj_theta1_rao <- NA
     
     bias_est_theta1_true <- NA
     bias_est_theta1_per12 <- NA
     bias_est_theta1_per1 <- NA
     bias_est_theta1_per2 <- NA
+    bias_est_theta1_rao <- NA
     
     theta2_tilde_unadj_cond <- NA
     theta2_tilde_adj_theta1_true_cond <- NA
     theta2_tilde_adj_theta1_per12_cond <- NA
     theta2_tilde_adj_theta1_per1_cond <- NA
     theta2_tilde_adj_theta1_per2_cond <- NA
+    theta2_tilde_adj_theta1_rao_cond <- NA
     
     bias_arm2_unadj_cond <- NA
     bias_arm2_adj_theta1_true_cond <- NA
     bias_arm2_adj_theta1_per12_cond <- NA
     bias_arm2_adj_theta1_per1_cond <- NA
     bias_arm2_adj_theta1_per2_cond <- NA
+    bias_arm2_adj_theta1_rao_cond <- NA
     
     reject_h02_unadj_cond <- NA
     reject_h02_adj_theta1_true_cond <- NA
     reject_h02_adj_theta1_per12_cond <- NA
     reject_h02_adj_theta1_per1_cond <- NA
     reject_h02_adj_theta1_per2_cond <- NA
+    reject_h02_adj_theta1_rao_cond <- NA
     
   } else { # arm 1 continues
     
@@ -235,29 +240,34 @@ runtrial_IA_MAE <- function(n_01 = 100,
     theta2_tilde_adj_theta1_per12 <- MAEs$theta2_tilde_adj_theta1_per12
     theta2_tilde_adj_theta1_per1 <- MAEs$theta2_tilde_adj_theta1_per1
     theta2_tilde_adj_theta1_per2 <- MAEs$theta2_tilde_adj_theta1_per2
+    theta2_tilde_adj_theta1_rao <- MAEs$theta2_tilde_adj_theta1_rao
     
     bias_est_theta1_true <- MAEs$bias_est_theta1_true
     bias_est_theta1_per12 <- MAEs$bias_est_theta1_per12
     bias_est_theta1_per1 <- MAEs$bias_est_theta1_per1
     bias_est_theta1_per2 <- MAEs$bias_est_theta1_per2
+    bias_est_theta1_rao <- MAEs$bias_est_theta1_rao
     
     bias_arm2_unadj <- theta2_tilde_unadj - theta[2] 
     bias_arm2_adj_theta1_true <- theta2_tilde_adj_theta1_true - theta[2] 
     bias_arm2_adj_theta1_per12 <- theta2_tilde_adj_theta1_per12 - theta[2] 
     bias_arm2_adj_theta1_per1 <- theta2_tilde_adj_theta1_per1 - theta[2] 
     bias_arm2_adj_theta1_per2 <- theta2_tilde_adj_theta1_per2 - theta[2] 
+    bias_arm2_adj_theta1_rao <- theta2_tilde_adj_theta1_rao - theta[2] 
     
     theta2_tilde_unadj_cond <- MAEs$theta2_tilde_unadj
     theta2_tilde_adj_theta1_true_cond <- MAEs$theta2_tilde_adj_theta1_true
     theta2_tilde_adj_theta1_per12_cond <- MAEs$theta2_tilde_adj_theta1_per12
     theta2_tilde_adj_theta1_per1_cond <- MAEs$theta2_tilde_adj_theta1_per1
     theta2_tilde_adj_theta1_per2_cond <- MAEs$theta2_tilde_adj_theta1_per2
+    theta2_tilde_adj_theta1_rao_cond <- MAEs$theta2_tilde_adj_theta1_rao
     
     bias_arm2_unadj_cond <- theta2_tilde_unadj - theta[2] 
     bias_arm2_adj_theta1_true_cond <- theta2_tilde_adj_theta1_true - theta[2] 
     bias_arm2_adj_theta1_per12_cond <- theta2_tilde_adj_theta1_per12 - theta[2] 
     bias_arm2_adj_theta1_per1_cond <- theta2_tilde_adj_theta1_per1 - theta[2] 
     bias_arm2_adj_theta1_per2_cond <- theta2_tilde_adj_theta1_per2 - theta[2] 
+    bias_arm2_adj_theta1_rao_cond <- theta2_tilde_adj_theta1_rao - theta[2] 
     
     
     # Bootstrap variance of MAE
@@ -269,6 +279,7 @@ runtrial_IA_MAE <- function(n_01 = 100,
     var_boot_est_adj_theta1_per12 <- res_bootstrap$var_boot_est_adj_theta1_per12
     var_boot_est_adj_theta1_per1 <- res_bootstrap$var_boot_est_adj_theta1_per1
     var_boot_est_adj_theta1_per2 <- res_bootstrap$var_boot_est_adj_theta1_per2
+    var_boot_est_adj_theta1_rao <- res_bootstrap$var_boot_est_adj_theta1_rao
     boot_stop <- res_bootstrap$boot_stop
     
     
@@ -299,6 +310,11 @@ runtrial_IA_MAE <- function(n_01 = 100,
     test_stat_adj_theta1_per2 <- theta2_tilde_adj_theta1_per2/sqrt(var_boot_est_adj_theta1_per2)
     reject_h02_adj_theta1_per2 <- test_stat_adj_theta1_per2 > qnorm(1-alpha)
     reject_h02_adj_theta1_per2_cond <- test_stat_adj_theta1_per2 > qnorm(1-alpha)
+    
+    # Wald test for arm 2 (adjusted, theta1 Rao)
+    test_stat_adj_theta1_rao <- theta2_tilde_adj_theta1_rao/sqrt(var_boot_est_adj_theta1_rao)
+    reject_h02_adj_theta1_rao <- test_stat_adj_theta1_rao > qnorm(1-alpha)
+    reject_h02_adj_theta1_rao_cond <- test_stat_adj_theta1_rao > qnorm(1-alpha)
     
   }
   
@@ -332,59 +348,69 @@ runtrial_IA_MAE <- function(n_01 = 100,
               theta2_tilde_adj_theta1_per12 = theta2_tilde_adj_theta1_per12,
               theta2_tilde_adj_theta1_per1 = theta2_tilde_adj_theta1_per1,
               theta2_tilde_adj_theta1_per2 = theta2_tilde_adj_theta1_per2,
+              theta2_tilde_adj_theta1_rao = theta2_tilde_adj_theta1_rao,
               
               theta2_tilde_unadj_cond = theta2_tilde_unadj_cond,
               theta2_tilde_adj_theta1_true_cond = theta2_tilde_adj_theta1_true_cond,
               theta2_tilde_adj_theta1_per12_cond = theta2_tilde_adj_theta1_per12_cond,
               theta2_tilde_adj_theta1_per1_cond = theta2_tilde_adj_theta1_per1_cond,
               theta2_tilde_adj_theta1_per2_cond = theta2_tilde_adj_theta1_per2_cond,
+              theta2_tilde_adj_theta1_rao_cond = theta2_tilde_adj_theta1_rao_cond,
               
               bias_est_theta1_true = bias_est_theta1_true,
               bias_est_theta1_per12 = bias_est_theta1_per12,
               bias_est_theta1_per1 = bias_est_theta1_per1,
               bias_est_theta1_per2 = bias_est_theta1_per2,
+              bias_est_theta1_rao = bias_est_theta1_rao,
               
               var_boot_est_unadj = var_boot_est_unadj,
               var_boot_est_adj_theta1_true = var_boot_est_adj_theta1_true,
               var_boot_est_adj_theta1_per12 = var_boot_est_adj_theta1_per12,
               var_boot_est_adj_theta1_per1 = var_boot_est_adj_theta1_per1,
               var_boot_est_adj_theta1_per2 = var_boot_est_adj_theta1_per2,
+              var_boot_est_adj_theta1_rao = var_boot_est_adj_theta1_rao,
               
               bias_arm2_unadj = bias_arm2_unadj,
               bias_arm2_adj_theta1_true = bias_arm2_adj_theta1_true,
               bias_arm2_adj_theta1_per12 = bias_arm2_adj_theta1_per12,
               bias_arm2_adj_theta1_per1 = bias_arm2_adj_theta1_per1,
               bias_arm2_adj_theta1_per2 = bias_arm2_adj_theta1_per2,
+              bias_arm2_adj_theta1_rao = bias_arm2_adj_theta1_rao,
               
               bias_arm2_unadj_cond = bias_arm2_unadj_cond,
               bias_arm2_adj_theta1_true_cond = bias_arm2_adj_theta1_true_cond,
               bias_arm2_adj_theta1_per12_cond = bias_arm2_adj_theta1_per12_cond,
               bias_arm2_adj_theta1_per1_cond = bias_arm2_adj_theta1_per1_cond,
               bias_arm2_adj_theta1_per2_cond = bias_arm2_adj_theta1_per2_cond,
+              bias_arm2_adj_theta1_rao_cond = bias_arm2_adj_theta1_rao_cond,
               
               MSE_arm2_unadj = bias_arm2_unadj^2,
               MSE_arm2_adj_theta1_true = bias_arm2_adj_theta1_true^2,
               MSE_arm2_adj_theta1_per12 = bias_arm2_adj_theta1_per12^2,
               MSE_arm2_adj_theta1_per1 = bias_arm2_adj_theta1_per1^2,
               MSE_arm2_adj_theta1_per2 = bias_arm2_adj_theta1_per2^2,
+              MSE_arm2_adj_theta1_rao = bias_arm2_adj_theta1_rao^2,
               
               MSE_arm2_unadj_cond = bias_arm2_unadj_cond^2,
               MSE_arm2_adj_theta1_true_cond = bias_arm2_adj_theta1_true_cond^2,
               MSE_arm2_adj_theta1_per12_cond = bias_arm2_adj_theta1_per12_cond^2,
               MSE_arm2_adj_theta1_per1_cond = bias_arm2_adj_theta1_per1_cond^2,
               MSE_arm2_adj_theta1_per2_cond = bias_arm2_adj_theta1_per2_cond^2,
+              MSE_arm2_adj_theta1_rao_cond = bias_arm2_adj_theta1_rao_cond^2,
               
               reject_h02_unadj = reject_h02_unadj, 
               reject_h02_adj_theta1_true = reject_h02_adj_theta1_true,
               reject_h02_adj_theta1_per12 = reject_h02_adj_theta1_per12,
               reject_h02_adj_theta1_per1 = reject_h02_adj_theta1_per1,
               reject_h02_adj_theta1_per2 = reject_h02_adj_theta1_per2,
+              reject_h02_adj_theta1_rao = reject_h02_adj_theta1_rao,
               
               reject_h02_unadj_cond = reject_h02_unadj_cond, 
               reject_h02_adj_theta1_true_cond = reject_h02_adj_theta1_true_cond,
               reject_h02_adj_theta1_per12_cond = reject_h02_adj_theta1_per12_cond,
               reject_h02_adj_theta1_per1_cond = reject_h02_adj_theta1_per1_cond,
               reject_h02_adj_theta1_per2_cond = reject_h02_adj_theta1_per2_cond,
+              reject_h02_adj_theta1_rao_cond = reject_h02_adj_theta1_rao_cond,
               
               theta2_tilde_unadj_stop = theta2_tilde_unadj_stop,
               bias_arm2_unadj_stop = bias_arm2_unadj_stop,
@@ -396,4 +422,5 @@ runtrial_IA_MAE <- function(n_01 = 100,
               MSE_arm2_sep = bias_arm2_sep^2,
               reject_h02_sep = reject_h02_sep))
 }
+
 

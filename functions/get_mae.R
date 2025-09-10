@@ -23,10 +23,35 @@ get_mae <- function(Data, theta, sigma, futility_bound){
   y_12 <- mean(Data[Data$treatment==1 & Data$period_2==2,]$response)
   y_11 <- mean(Data[Data$treatment==1 & Data$period_2==1,]$response)
   
+  get_cumvue <- function(Data){
+    l <- c_1
+    u <- Inf
+    
+    z <- (mean(Data[Data$treatment==1,]$response) - mean(Data[Data$treatment==0,]$response))/sqrt(sigma^2/(n_01+n_02) + sigma^2/(n_11+n_12))
+    
+    I1 <- 1/(sigma^2*(1/n_11 + 1/n_01))
+    
+    I2 <- 1/(sigma^2*(1/(n_11 + n_12) + 1/(n_01 + n_02)))
+    
+    mle <- z/sqrt(I2)
+    
+    corr_term <- (I2 - I1) / (I2 * sqrt(I1)) *
+      ( dnorm(u, mean = z * sqrt(I1 / I2), sd = sqrt((I2 - I1) / I2)) -
+          dnorm(l, mean = z * sqrt(I1 / I2), sd = sqrt((I2 - I1) / I2)) ) /
+      ( pnorm(u, mean = z * sqrt(I1 / I2), sd = sqrt((I2 - I1) / I2)) -
+          pnorm(l, mean = z * sqrt(I1 / I2), sd = sqrt((I2 - I1) / I2)) )
+    
+    UMVUE <- mle - corr_term
+    
+    CUMVUE <- (z*sqrt(I2) - I1*UMVUE)/(I2-I1)
+    CUMVUE
+  }
+  
   theta_1_true <- theta[1]
   theta_1_per12 <- mean(Data[Data$treatment==1,]$response) - mean(Data[Data$treatment==0,]$response)
   theta_1_per1 <- y_11 - y_01
   theta_1_per2 <- y_12 - y_02
+  theta_1_rao <- get_cumvue(Data)
   
   rho <- (1/n_02)/(1/n_01 + 1/n_02 + 1/n_11 + 1/n_12)
   
@@ -34,9 +59,16 @@ get_mae <- function(Data, theta, sigma, futility_bound){
   
   theta2_tilde_MAE <- function(theta_1){
     
-    sd_per1 <- sqrt(sigma^2/n_11 + sigma^2/n_01)
+    # sd_per1 <- sqrt(sigma^2/n_11 + sigma^2/n_01)
     
-    bias <- rho*pnorm(c_1 - theta_1)*sd_per1*(dnorm(c_1 - (theta_1/sd_per1))/(pnorm(-c_1 + (theta_1/sd_per1))*pnorm(c_1 - (theta_1/sd_per1))))
+    sd_per1 <- sigma*sqrt(1/n_11 + 1/n_01)
+    
+    # bias <- rho*pnorm(c_1 - theta_1)*sd_per1*(dnorm(c_1 - (theta_1/sd_per1))/(pnorm(-c_1 + (theta_1/sd_per1))*pnorm(c_1 - (theta_1/sd_per1))))
+    
+    # bias <- (rho*sd_per1*dnorm(c_1 - (theta_1/sd_per1)))/(1-pnorm(c_1 - (theta_1/sd_per1)))
+    
+    # equivalent to the formula in paper, but using x=exp(log(x)) to avoid computational problems:
+    bias <- exp(log(rho*sd_per1)+dnorm((c_1 - (theta_1/sd_per1)), log = T) - (pnorm((-c_1 + (theta_1/sd_per1)), log.p = T)))
     
     return(list(est = theta2_tilde_unadj - bias, 
                 bias = bias))
@@ -50,6 +82,9 @@ get_mae <- function(Data, theta, sigma, futility_bound){
   
   theta2_tilde_adj_theta1_per2 <- theta2_tilde_MAE(theta_1_per2)$est
   
+  theta2_tilde_adj_theta1_rao <- theta2_tilde_MAE(theta_1_rao)$est
+  
+  
   bias_est_theta1_true <- theta2_tilde_MAE(theta_1_true)$bias
   
   bias_est_theta1_per12 <- theta2_tilde_MAE(theta_1_per12)$bias
@@ -58,15 +93,20 @@ get_mae <- function(Data, theta, sigma, futility_bound){
   
   bias_est_theta1_per2 <- theta2_tilde_MAE(theta_1_per2)$bias
   
+  bias_est_theta1_rao <- theta2_tilde_MAE(theta_1_rao)$bias
+  
   return(list(theta2_tilde_unadj = theta2_tilde_unadj,
               theta2_tilde_adj_theta1_true = theta2_tilde_adj_theta1_true,
               theta2_tilde_adj_theta1_per12 = theta2_tilde_adj_theta1_per12,
               theta2_tilde_adj_theta1_per1 = theta2_tilde_adj_theta1_per1,
               theta2_tilde_adj_theta1_per2 = theta2_tilde_adj_theta1_per2,
+              theta2_tilde_adj_theta1_rao = theta2_tilde_adj_theta1_rao,
+              
               bias_est_theta1_true = bias_est_theta1_true,
               bias_est_theta1_per12 = bias_est_theta1_per12,
               bias_est_theta1_per1 = bias_est_theta1_per1,
-              bias_est_theta1_per2 = bias_est_theta1_per2))
+              bias_est_theta1_per2 = bias_est_theta1_per2,
+              bias_est_theta1_rao = bias_est_theta1_rao))
 }
 
 
